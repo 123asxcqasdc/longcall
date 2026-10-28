@@ -784,10 +784,7 @@ body.is-dragging, body.is-dragging * { cursor: move !important; user-select: non
 .modal-icon svg { width: 32px; height: 32px; }
 .modal-body::after { content: ""; display: block; clear: both; }
 
-.rules-steps { margin: 6px 0 8px; padding-left: 18px; }
-.rules-steps li { margin-bottom: 3px; }
-
-.rules-json {
+.text-block {
   margin: 0 0 8px;
   padding: 6px 8px;
   max-height: 210px;

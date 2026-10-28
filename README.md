@@ -35,8 +35,9 @@ https://123asxcqasdc.github.io/longcall/
    (и `localhost`, если проверяете локально).
 
 3. **Правила базы данных.**
-   Realtime Database → Rules → вставить содержимое [`database.rules.json`](database.rules.json)
-   (или нажать «Правила базы данных…» в меню «Справка» внутри приложения и скопировать JSON оттуда).
+   Realtime Database → Rules → вставить содержимое [`database.rules.json`](database.rules.json).
+   В интерфейсе приложения эти шаги намеренно не показываются: настройка делается один раз
+   в консоли Firebase.
 
    ```
    firebase deploy --only database    # альтернатива, если установлен firebase-tools

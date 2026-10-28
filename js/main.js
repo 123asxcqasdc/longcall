@@ -189,10 +189,7 @@ function showFatal(err) {
     icon: "i-warn",
     dismissible: false,
     body: el("p", { text: errorText(err) }),
-    buttons: [
-      { label: t("common.retry"), onClick: () => location.reload() },
-      { label: t("menu.help.rules"), onClick: () => openRules() },
-    ],
+    buttons: [{ label: t("common.retry"), onClick: () => location.reload() }],
   });
 }
 
@@ -268,14 +265,6 @@ async function authenticate(nick) {
               onClick: () => {
                 answered = true;
                 resolve(true);
-              },
-            },
-            {
-              label: t("menu.help.rules"),
-              onClick: () => {
-                answered = true;
-                resolve(false);
-                openRules();
               },
             },
           ],
@@ -1090,78 +1079,9 @@ function openAbout() {
   });
 }
 
-const DB_RULES = `{
-  "rules": {
-    ".read": false,
-    ".write": false,
-    "rooms": {
-      "$code": {
-        ".read": "auth != null",
-        ".write": "auth != null",
-        "meta": {
-          ".validate": "newData.hasChildren(['createdAt', 'createdBy', 'maxParticipants'])"
-        },
-        "participants": {
-          "$uid": {
-            ".write": "auth != null && auth.uid === $uid",
-            ".validate": "newData.hasChildren(['nick', 'joinedAt'])"
-          }
-        },
-        "signals": {
-          "$to": {
-            "$message": {
-              ".write": "auth != null",
-              ".validate": "newData.hasChildren(['from', 'type', 'at'])"
-            }
-          }
-        }
-      }
-    },
-    "users": {
-      "$uid": {
-        ".read": "auth != null && auth.uid === $uid",
-        ".write": "auth != null && auth.uid === $uid"
-      }
-    }
-  }
-}`;
-
-function openRules() {
-  const wrap = document.createElement("div");
-  wrap.append(el("p", { text: t("modal.rules.intro") }));
-
-  const list = el("ol", { class: "rules-steps" });
-  list.append(el("li", { text: t("modal.rules.step1") }));
-  list.append(el("li", { text: t("modal.rules.step2") }));
-  list.append(el("li", { text: t("modal.rules.step3", { host: location.host }) }));
-  wrap.append(list);
-
-  const pre = el("pre", { class: "rules-json", text: DB_RULES });
-  wrap.append(pre);
-
-  const copyBtn = el("button", { type: "button", class: "btn btn-sm", text: t("modal.rules.copy") });
-  copyBtn.addEventListener("click", async () => {
-    const ok = await copyText(DB_RULES);
-    toast({
-      title: ok ? t("toast.copied") : t("err.title"),
-      icon: "i-copy",
-      tone: ok ? "info" : "error",
-    });
-  });
-  wrap.append(el("div", { class: "row" }, [copyBtn]));
-
-  openModal({
-    title: t("modal.rules.title"),
-    icon: "i-key",
-    width: "min(540px, 100%)",
-    body: wrap,
-    buttons: [{ label: t("common.close"), onClick: () => {} }],
-  });
-}
-
 function openReadme() {
   const wrap = document.createElement("div");
-  wrap.append(el("pre", { class: "rules-json", text: t("modal.readme.body") }));
+  wrap.append(el("pre", { class: "text-block", text: t("modal.readme.body") }));
   openModal({
     title: t("modal.readme.title"),
     icon: "i-notepad",
@@ -1220,9 +1140,6 @@ async function handleAction(action) {
       break;
     case "about":
       openAbout();
-      break;
-    case "rules":
-      openRules();
       break;
     case "readme":
       openReadme();
