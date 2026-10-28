@@ -50,14 +50,6 @@ import {
   roomSnapshot,
 } from "./firebase.js";
 import { WindowManager, openModal, confirmModal, toast, initMenus } from "./ui.js";
-import {
-  initTheme,
-  getTheme,
-  setTheme,
-  onThemeChange,
-  isSymbian,
-  themeLabelKey,
-} from "./theme.js";
 
 const state = {
   uid: null,
@@ -82,7 +74,6 @@ let wm = null;
    ========================================================================= */
 
 async function boot() {
-  initTheme();
   initLang();
   document.documentElement.lang = getLang();
   applyI18n();
@@ -626,8 +617,6 @@ async function openCall(code) {
   });
 
   state.session = session;
-  updateSoftkeys();
-  updateS60Status();
 
   try {
     await session.join();
@@ -707,8 +696,6 @@ async function hangup({ silent = false } = {}) {
   state.activeCode = "";
   callView.stop();
   wm?.close("call");
-  updateSoftkeys();
-  updateS60Status();
   document.body.classList.remove("in-call");
   document.title = t("app.name");
   const url = new URL(location.href);
@@ -790,7 +777,6 @@ async function toggleMic() {
     await session.setMuted(nextMuted);
     callView.setMicState(nextMuted);
     updateMicCell();
-    updateS60Status();
     toast({
       title: nextMuted ? t("call.mutedToast") : t("call.unmutedToast"),
       icon: nextMuted ? "i-mic-off" : "i-mic",
@@ -883,15 +869,6 @@ async function openSettings() {
   levelField.append(testRow);
   wrap.append(levelField);
 
-  const themeField = el("div", { class: "field" });
-  themeField.append(el("label", { for: "themeSelect", text: t("modal.settings.theme") }));
-  const themeSelect = el("select", { class: "input", id: "themeSelect" });
-  themeSelect.append(el("option", { value: "win98", text: t("theme.win98") }));
-  themeSelect.append(el("option", { value: "symbian", text: t("theme.symbian") }));
-  themeSelect.value = getTheme();
-  themeField.append(themeSelect, el("small", { class: "small-dim", text: t("modal.settings.themeHint") }));
-  wrap.append(themeField);
-
   const sounds = el("label", { class: "checkbox" });
   const soundsInput = el("input", { type: "checkbox" });
   soundsInput.checked = getSoundsEnabled();
@@ -963,10 +940,6 @@ async function openSettings() {
 
   langSelect.addEventListener("change", () => {
     setLang(langSelect.value);
-  });
-
-  themeSelect.addEventListener("change", () => {
-    setTheme(themeSelect.value);
   });
 
   select.addEventListener("change", async () => {
@@ -1174,29 +1147,6 @@ async function handleAction(action) {
     case "copy-link":
       copyRoomLink();
       break;
-    case "toggle-theme":
-      setTheme(getTheme() === "symbian" ? "win98" : "symbian");
-      break;
-    case "create-call":
-      closeS60Menu();
-      createCall();
-      break;
-    case "focus-code": {
-      closeS60Menu();
-      wm?.open("home");
-      const input = $("#joinCode");
-      input?.focus();
-      input?.select();
-      break;
-    }
-    case "mic":
-      closeS60Menu();
-      toggleMic();
-      break;
-    case "participants":
-      closeS60Menu();
-      openParticipants();
-      break;
     case "hangup":
       if (state.session) hangup();
       break;
@@ -1212,13 +1162,7 @@ function updateSoundUI() {
   $("#traySound")?.classList.toggle("off", !enabled);
 }
 
-function updateThemeLabels() {
-  const node = $("#themeMenuLabel");
-  if (node) node.textContent = t("menu.view.theme", { name: t(themeLabelKey()) });
-}
-
 function syncLangButtons() {
-  updateThemeLabels();
   const label = getLang().toUpperCase();
   const a = $("#langBtn");
   const b = $("#callLangBtn");
@@ -1229,168 +1173,6 @@ function syncLangButtons() {
 /* =========================================================================
    Каркас: окна, меню, панель задач
    ========================================================================= */
-
-/* =========================================================================
-   Symbian / Nokia: софткеи, «Опции», статус-бар
-   ========================================================================= */
-
-const s60 = { menuOpen: false };
-
-function setupS60Chrome() {
-  $("#softLeft")?.addEventListener("click", () => {
-    if (s60.menuOpen) closeS60Menu();
-    else openS60Menu();
-  });
-  $("#softRight")?.addEventListener("click", () => {
-    if (s60.menuOpen) {
-      closeS60Menu();
-      return;
-    }
-    if (state.session) hangup();
-    else createCall();
-  });
-
-  document.addEventListener("pointerdown", (event) => {
-    if (!s60.menuOpen) return;
-    if (event.target.closest("#s60Menu") || event.target.closest("#softLeft")) return;
-    closeS60Menu();
-  });
-  document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") closeS60Menu();
-  });
-
-  applyChromeVisibility();
-
-  onThemeChange((theme) => {
-    applyChromeVisibility();
-    updateSoftkeys();
-    updateS60Status();
-    updateThemeLabels();
-    toast({
-      title: t("theme.changed", { name: t(themeLabelKey(theme)) }),
-      icon: theme === "symbian" ? "i-phone" : "i-gear",
-      timeout: 2200,
-    });
-    if (wm && !wm.wins.get("home")?.open) wm.open("home");
-  });
-
-  updateSoftkeys();
-  updateS60Status();
-}
-
-function s60MenuItems() {
-  if (state.session) {
-    const muted = audioEngine.muted;
-    return [
-      { icon: muted ? "i-mic" : "i-mic-off", label: t(muted ? "s60.menu.micOn" : "s60.menu.micOff"), action: "mic" },
-      { icon: "i-users", label: t("call.participants"), action: "participants" },
-      { icon: "i-copy", label: t("call.copyLink"), action: "copy-link" },
-      { sep: true },
-      { icon: "i-gear", label: t("menu.file.settings"), action: "settings" },
-      { icon: "i-refresh", label: t("s60.menu.retheme"), action: "toggle-theme" },
-      { sep: true },
-      { icon: "i-hangup", label: t("call.hangupMenu"), action: "hangup", danger: true },
-    ];
-  }
-  return [
-    { icon: "i-phone-plus", label: t("s60.menu.create"), action: "create-call" },
-    { icon: "i-key", label: t("s60.menu.code"), action: "focus-code" },
-    { sep: true },
-    { icon: "i-user", label: t("modal.profile.title"), action: "profile" },
-    { icon: "i-gear", label: t("menu.file.settings"), action: "settings" },
-    { icon: "i-refresh", label: t("s60.menu.retheme"), action: "toggle-theme" },
-    { icon: "i-info", label: t("modal.about.title"), action: "about" },
-    { icon: "i-notepad", label: t("modal.readme.title"), action: "readme" },
-  ];
-}
-
-function openS60Menu() {
-  const list = $("#s60MenuList");
-  const panel = $("#s60Menu");
-  if (!list || !panel) return;
-
-  list.textContent = "";
-  const title = $("#s60MenuTitle");
-  if (title) {
-    title.textContent = state.session
-      ? t("s60.menu.callTitle", { code: state.activeCode })
-      : t("s60.options");
-  }
-
-  for (const item of s60MenuItems()) {
-    if (item.sep) {
-      list.append(el("div", { class: "s60-sep" }));
-      continue;
-    }
-    const btn = el("button", {
-      type: "button",
-      class: `s60-item ${item.danger ? "danger" : ""}`.trim(),
-      role: "menuitem",
-    });
-    btn.append(svgUse(item.icon));
-    btn.append(el("span", { text: item.label }));
-    btn.addEventListener("click", () => {
-      closeS60Menu();
-      handleAction(item.action);
-    });
-    list.append(btn);
-  }
-
-  panel.classList.remove("hidden");
-  s60.menuOpen = true;
-  requestAnimationFrame(() => list.querySelector(".s60-item")?.focus());
-}
-
-function closeS60Menu() {
-  if (!s60.menuOpen) return;
-  s60.menuOpen = false;
-  $("#s60Menu")?.classList.add("hidden");
-}
-
-function applyChromeVisibility() {
-  const chrome = $("#s60Chrome");
-  const on = isSymbian();
-  if (chrome) chrome.hidden = !on;
-  document.body.classList.toggle("is-symbian", on);
-  if (!on) closeS60Menu();
-}
-
-function updateSoftkeys() {
-  if (!isSymbian()) return;
-  const inCall = Boolean(state.session);
-  const left = $("#softLeftLabel");
-  const right = $("#softRightLabel");
-  if (left) left.textContent = t("s60.options");
-  if (right) right.textContent = t(inCall ? "s60.end" : "s60.create");
-  $("#softRight")?.classList.toggle("danger", inCall);
-  const net = $("#s60Net");
-  if (net) net.textContent = "LongCall";
-  const hint = $("#softHint");
-  if (hint && !inCall) hint.textContent = t("s60.hint.home");
-}
-
-function updateS60Status() {
-  if (!isSymbian()) return;
-  const signal = $("#s60Signal");
-  signal?.classList.toggle("offline", !navigator.onLine);
-
-  const mic = $("#s60Mic");
-  if (mic) {
-    const muted = Boolean(!audioEngine.stream || audioEngine.muted);
-    mic.hidden = !state.session || !muted;
-    mic.classList.toggle("muted", muted);
-  }
-}
-
-function tickS60Hint() {
-  if (!isSymbian() || !state.session) return;
-  const hint = $("#softHint");
-  if (!hint) return;
-  const ms = callView.joinedAt ? Date.now() - callView.joinedAt : 0;
-  const mm = String(Math.floor(ms / 60000)).padStart(2, "0");
-  const ss = String(Math.floor((ms % 60000) / 1000)).padStart(2, "0");
-  hint.textContent = t("s60.hint.call", { code: state.activeCode, time: `${mm}:${ss}` });
-}
 
 function setupWindowManager() {
   wm = new WindowManager($("#desktop"), $("#taskbarTasks"));
@@ -1419,7 +1201,6 @@ function setupWindowManager() {
 
 function setupChrome() {
   initMenus();
-  setupS60Chrome();
 
   // кнопки «Пуск» и меню
   const startBtn = $("#startBtn");
@@ -1506,19 +1287,15 @@ function setupChrome() {
 
   // часы
   const clock = $("#trayClock");
-  const s60Clock = $("#s60Clock");
   const tick = () => {
     const now = new Date();
-    const time = now.toLocaleTimeString(getLang() === "ru" ? "ru-RU" : "en-US", {
+    clock.textContent = now.toLocaleTimeString(getLang() === "ru" ? "ru-RU" : "en-US", {
       hour: "2-digit",
       minute: "2-digit",
     });
-    if (clock) clock.textContent = time;
-    if (s60Clock) s60Clock.textContent = time;
-    tickS60Hint();
   };
   tick();
-  setInterval(tick, 1000);
+  setInterval(tick, 15_000);
 
   // разблокировка аудиоконтекста первым жестом
   const unlock = () => audioEngine.unlock();
@@ -1526,12 +1303,10 @@ function setupChrome() {
   document.addEventListener("keydown", unlock, { once: true });
 
   window.addEventListener("online", () => {
-    updateS60Status();
     callView.updateStatus();
     toast({ title: t("toast.reconnected"), icon: "i-info", timeout: 2200 });
   });
   window.addEventListener("offline", () => {
-    updateS60Status();
     callView.updateStatus();
     toast({ title: t("toast.reconnecting"), icon: "i-warn", tone: "error", timeout: 3600 });
   });
@@ -1546,8 +1321,6 @@ function setupChrome() {
     document.title = state.activeCode ? t("call.title", { code: state.activeCode }) : t("app.name");
     if (state.activeCode) updateCallWindowTitle();
     callView.refreshLabels();
-    updateSoftkeys();
-    updateS60Status();
     renderProfile();
     updateHomeStatus();
     updateMicCell();

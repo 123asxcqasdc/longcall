@@ -41,7 +41,6 @@ export const ICE_SERVERS = [
 
 export const STORAGE_KEYS = {
   lang: "lc.lang",
-  theme: "lc.theme",
   sound: "lc.sound",
   mic: "lc.mic",
   profile: "lc.profile",
