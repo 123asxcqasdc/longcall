@@ -122,11 +122,23 @@ tools/firebase-entry.js точка входа для сборки SDK
 
 ## Деплой
 
-Workflow [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) собирает статику
-(без `.git`, `node_modules`, `tools`) и публикует её через `actions/deploy-pages`.
+Workflow [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) проверяет синтаксис,
+собирает статику (без `.git`, `node_modules`, `tools`) и публикует её через `actions/deploy-pages`.
 
-Pages включается один раз: Settings → Pages → Source → **GitHub Actions**.
-После пуша в `main` сайт обновляется автоматически.
+### Включение Pages (один раз, вручную)
+
+Токен интеграции и `GITHUB_TOKEN` не могут создать сайт Pages — это делает владелец
+репозитория, поэтому первый запуск workflow проходит без деплоя и оставляет подсказку:
+
+1. **Settings → Pages → Build and deployment → Source: GitHub Actions.**
+2. **Actions → Deploy to GitHub Pages → Re-run jobs** (или просто следующий пуш в `main`).
+
+После этого сайт живёт на `https://123asxcqasdc.github.io/longcall/` и обновляется
+автоматически при каждом пуше в `main`. Пока Pages не включён, сборка остаётся зелёной —
+workflow проверяет доступность Pages API и пропускает шаги деплоя.
+
+Альтернатива без Actions: Settings → Pages → Source: **Deploy from a branch** → `main` → `/ (root)`.
+Сайт заработает сразу, но тогда workflow деплоя не нужен и его лучше отключить.
 
 ## Совместимость
 
