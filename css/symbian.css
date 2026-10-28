@@ -1,0 +1,763 @@
+/* ============================================================
+   symbian.css — тема «Nokia / Symbian S60 (старая)»
+   Включается через html[data-theme="symbian"], поверх win98.css
+   и app.css. Внутри темы win98 весь этот блок не действует.
+   ============================================================ */
+
+html[data-theme="symbian"] {
+  --s60-blue: #2f6bb0;
+  --s60-blue-dark: #1b3f6b;
+  --s60-blue-light: #cfe0f2;
+  --s60-bg: #e8e6e1;
+  --s60-panel: #ffffff;
+  --s60-line: #c8c6c0;
+  --s60-line-soft: #e2e0da;
+  --s60-text: #1c1c1c;
+  --s60-dim: #63615c;
+  --s60-key-bg: #f2f1ec;
+  --s60-radius: 4px;
+  --s60-font: "Segoe UI", Tahoma, Verdana, "MS Sans Serif", sans-serif;
+  --s60-status-h: 24px;
+  --s60-keys-h: 42px;
+}
+
+/* симбиановский хром существует только в своей теме */
+.s60-chrome,
+.s60-menu,
+.s60-chrome[hidden] { display: none !important; }
+
+html[data-theme="symbian"] .s60-chrome { display: block; }
+
+/* ============================== база ============================== */
+
+html[data-theme="symbian"] body {
+  font: 13px/1.4 var(--s60-font);
+  background: var(--s60-bg);
+  color: var(--s60-text);
+}
+
+html[data-theme="symbian"] .svg-sprite { position: absolute; }
+
+/* ============================ хром телефона ============================ */
+
+html[data-theme="symbian"] .s60-status {
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: var(--s60-status-h);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  background: linear-gradient(#2b5c95, var(--s60-blue-dark));
+  color: #fff;
+  font-size: 11px;
+  z-index: 56;
+  user-select: none;
+}
+
+html[data-theme="symbian"] .s60-signal {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 1px;
+  height: 12px;
+}
+html[data-theme="symbian"] .s60-signal i {
+  width: 3px;
+  background: #dbe7f5;
+  border-radius: 1px;
+}
+html[data-theme="symbian"] .s60-signal i:nth-child(1) { height: 4px; }
+html[data-theme="symbian"] .s60-signal i:nth-child(2) { height: 6px; }
+html[data-theme="symbian"] .s60-signal i:nth-child(3) { height: 8px; }
+html[data-theme="symbian"] .s60-signal i:nth-child(4) { height: 10px; }
+html[data-theme="symbian"] .s60-signal i:nth-child(5) { height: 12px; opacity: 0.35; }
+html[data-theme="symbian"] .s60-signal.offline i { background: #8b9db5; }
+
+html[data-theme="symbian"] .s60-net {
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+html[data-theme="symbian"] .s60-ind {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+html[data-theme="symbian"] .s60-mic svg { width: 12px; height: 12px; }
+html[data-theme="symbian"] .s60-mic.muted { color: #ff9a9a; }
+
+html[data-theme="symbian"] .s60-batt {
+  position: relative;
+  width: 20px;
+  height: 10px;
+  border: 1px solid #cfe0f2;
+  border-radius: 2px;
+  padding: 1px;
+  display: inline-block;
+}
+html[data-theme="symbian"] .s60-batt::after {
+  content: "";
+  position: absolute;
+  right: -3px;
+  top: 3px;
+  width: 2px;
+  height: 4px;
+  background: #cfe0f2;
+  border-radius: 0 1px 1px 0;
+}
+html[data-theme="symbian"] .s60-batt i {
+  display: block;
+  height: 100%;
+  width: 72%;
+  background: #9fd18a;
+  border-radius: 1px;
+}
+html[data-theme="symbian"] .s60-clock {
+  font-variant-numeric: tabular-nums;
+  min-width: 36px;
+  text-align: right;
+}
+
+html[data-theme="symbian"] .s60-softkeys {
+  position: fixed;
+  inset: auto 0 0 0;
+  height: var(--s60-keys-h);
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+  padding: 4px 4px calc(4px + env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(#fbfbf9, #dedcd6);
+  border-top: 1px solid #a9a7a1;
+  z-index: 56;
+  user-select: none;
+}
+
+html[data-theme="symbian"] .s60-key {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 96px;
+  padding: 0 12px;
+  border: 1px solid #9a9891;
+  border-radius: var(--s60-radius);
+  background: linear-gradient(#ffffff, #ebe9e3);
+  color: #242424;
+  font: 600 13px/1 var(--s60-font);
+  cursor: pointer;
+}
+html[data-theme="symbian"] .s60-key:active {
+  background: linear-gradient(#2f6bb0, #214b7c);
+  border-color: #17395f;
+  color: #fff;
+}
+
+/* «фигурная» клавиша слева — как на Nokia */
+html[data-theme="symbian"] .s60-key-left {
+  border-radius: 0 12px 0 12px;
+  padding-right: 16px;
+}
+html[data-theme="symbian"] .s60-key-right {
+  border-radius: 12px 0 12px 0;
+  margin-left: auto;
+  padding-left: 16px;
+}
+html[data-theme="symbian"] .s60-key-ico {
+  width: 12px;
+  height: 12px;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  opacity: 0.75;
+}
+html[data-theme="symbian"] .s60-key-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  min-width: 0;
+  font-size: 11px;
+  color: var(--s60-dim);
+  text-align: center;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* ============================ меню «Опции» ============================ */
+
+html[data-theme="symbian"] .s60-menu {
+  display: block;
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--s60-keys-h) + 6px);
+  transform: translateX(-50%);
+  width: min(320px, calc(100% - 16px));
+  max-height: calc(100% - var(--s60-status-h) - var(--s60-keys-h) - 24px);
+  overflow: auto;
+  background: var(--s60-panel);
+  border: 1px solid #8f8d87;
+  border-radius: 8px;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.28);
+  z-index: 75;
+}
+html[data-theme="symbian"] .s60-menu.hidden { display: none; }
+
+html[data-theme="symbian"] .s60-menu-title {
+  padding: 8px 12px;
+  background: linear-gradient(#3b78bd, var(--s60-blue-dark));
+  color: #fff;
+  font-weight: 700;
+  border-radius: 7px 7px 0 0;
+}
+
+html[data-theme="symbian"] .s60-menu-list { padding: 4px 0 6px; }
+
+html[data-theme="symbian"] .s60-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 12px;
+  border: 0;
+  background: none;
+  text-align: left;
+  font: 13px/1.2 var(--s60-font);
+  color: var(--s60-text);
+  cursor: pointer;
+}
+html[data-theme="symbian"] .s60-item svg { width: 16px; height: 16px; flex: 0 0 auto; color: var(--s60-blue-dark); }
+html[data-theme="symbian"] .s60-item:hover,
+html[data-theme="symbian"] .s60-item:focus-visible {
+  background: var(--s60-blue);
+  color: #fff;
+  outline: none;
+}
+html[data-theme="symbian"] .s60-item:hover svg { color: #fff; }
+html[data-theme="symbian"] .s60-item.danger { color: #8b1a1a; }
+html[data-theme="symbian"] .s60-item.danger svg { color: #8b1a1a; }
+html[data-theme="symbian"] .s60-item.danger:hover { background: #8b1a1a; color: #fff; }
+html[data-theme="symbian"] .s60-item.danger:hover svg { color: #fff; }
+html[data-theme="symbian"] .s60-sep {
+  height: 1px;
+  margin: 4px 10px;
+  background: var(--s60-line-soft);
+}
+
+/* ============================== экран ============================== */
+
+html[data-theme="symbian"] .desktop {
+  background: var(--s60-bg);
+  padding: 0;
+}
+html[data-theme="symbian"] .desk-icons,
+html[data-theme="symbian"] .desk-watermark,
+html[data-theme="symbian"] .taskbar,
+html[data-theme="symbian"] .startmenu { display: none !important; }
+
+/* окна занимают «экран телефона» между строкой состояния и софткеями */
+html[data-theme="symbian"] .win:not(.splash) {
+  left: 0 !important;
+  top: var(--s60-status-h) !important;
+  right: 0 !important;
+  bottom: var(--s60-keys-h) !important;
+  width: auto !important;
+  height: auto !important;
+  max-height: none;
+  min-width: 0;
+  transform: none !important;
+  padding: 0;
+  background: var(--s60-bg);
+  box-shadow: none;
+  border-radius: 0;
+  z-index: 20;
+}
+html[data-theme="symbian"] .win:not(.focused) { z-index: 10; }
+
+html[data-theme="symbian"] .win > .titlebar {
+  height: 36px;
+  padding: 0 10px;
+  gap: 8px;
+  background: linear-gradient(#4c88c8, #24507f);
+  border-bottom: 1px solid #16385c;
+  color: #fff;
+  font: 700 14px/1 var(--s60-font);
+  justify-content: center;
+  cursor: default;
+}
+html[data-theme="symbian"] .win.inactive > .titlebar {
+  background: linear-gradient(#8a9aab, #5f7183);
+  color: #eef2f6;
+}
+html[data-theme="symbian"] .titlebar-icon svg { width: 14px; height: 14px; }
+html[data-theme="symbian"] .titlebar-btns { display: none; }
+html[data-theme="symbian"] .menubar { display: none !important; }
+
+html[data-theme="symbian"] .win-content {
+  padding: 8px;
+  gap: 8px;
+}
+
+/* ============================== главный экран ============================== */
+
+html[data-theme="symbian"] .home-content { gap: 8px; }
+
+html[data-theme="symbian"] .home-hero {
+  background: var(--s60-panel);
+  border: 1px solid var(--s60-line);
+  border-radius: 8px;
+  padding: 12px;
+  gap: 12px;
+  align-items: center;
+  box-shadow: none;
+}
+html[data-theme="symbian"] .hero-logo {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: linear-gradient(#4c88c8, #24507f);
+  box-shadow: none;
+}
+html[data-theme="symbian"] .hero-logo svg { width: 24px; height: 24px; }
+html[data-theme="symbian"] .hero-text h1 { font-size: 17px; font-weight: 700; letter-spacing: -0.2px; }
+html[data-theme="symbian"] .hero-text p { color: #3a3a3a; font-size: 12.5px; }
+html[data-theme="symbian"] .hero-text .hero-hint { color: var(--s60-dim); font-size: 11.5px; }
+
+html[data-theme="symbian"] .group {
+  background: var(--s60-panel);
+  border: 1px solid var(--s60-line);
+  border-radius: 8px;
+  padding: 22px 10px 10px;
+  box-shadow: none;
+  margin-top: 6px;
+}
+html[data-theme="symbian"] .group-title {
+  position: absolute;
+  top: 6px;
+  left: 10px;
+  padding: 0;
+  background: none;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--s60-blue-dark);
+}
+
+html[data-theme="symbian"] .profile-row { gap: 10px; }
+html[data-theme="symbian"] .profile-nick { font-size: 14px; }
+html[data-theme="symbian"] .profile-uid { font-size: 10.5px; color: var(--s60-dim); }
+
+html[data-theme="symbian"] .avatar {
+  border-radius: 50%;
+  box-shadow: none;
+  background: var(--s60-blue);
+  font-size: 12px;
+}
+html[data-theme="symbian"] .avatar-lg { width: 38px; height: 38px; font-size: 16px; }
+
+/* списки — как в S60: строки с тонкими разделителями и синим выбором */
+html[data-theme="symbian"] .listbox {
+  background: var(--s60-panel);
+  border: 1px solid var(--s60-line-soft);
+  border-radius: var(--s60-radius);
+  padding: 0;
+  overflow: auto;
+}
+html[data-theme="symbian"] .list-row {
+  padding: 9px 10px;
+  gap: 8px;
+  border-bottom: 1px solid var(--s60-line-soft);
+  border-radius: 0;
+}
+html[data-theme="symbian"] .list-row:last-child { border-bottom: 0; }
+html[data-theme="symbian"] .list-row.sel {
+  background: linear-gradient(#3b78bd, #27568b);
+  color: #fff;
+  border-bottom-color: #22497a;
+}
+html[data-theme="symbian"] .list-row.sel svg { color: #fff; }
+html[data-theme="symbian"] .list-row.sel .dim,
+html[data-theme="symbian"] .list-row.sel .recent-badge { color: #d6e4f5; }
+html[data-theme="symbian"] .recent-badge { font-size: 10.5px; }
+html[data-theme="symbian"] .empty-state { color: var(--s60-dim); padding: 16px 10px; }
+html[data-theme="symbian"] .empty-state b { color: var(--s60-text); }
+
+html[data-theme="symbian"] .home-cta {
+  background: var(--s60-panel);
+  border: 1px solid var(--s60-line);
+  border-radius: 8px;
+  padding: 10px;
+  gap: 10px;
+  box-shadow: none;
+}
+
+/* ============================== кнопки ============================== */
+
+html[data-theme="symbian"] .btn {
+  min-height: 34px;
+  padding: 0 14px;
+  border: 1px solid #9a9891;
+  border-radius: var(--s60-radius);
+  background: linear-gradient(#ffffff, #e9e7e1);
+  color: #1f1f1f;
+  font: 600 13px/1 var(--s60-font);
+  box-shadow: none;
+}
+html[data-theme="symbian"] .btn:active:not(:disabled) {
+  padding: 0 14px;
+  background: linear-gradient(#3b78bd, #27568b);
+  border-color: #1b3f6b;
+  color: #fff;
+  box-shadow: none;
+}
+html[data-theme="symbian"] .btn:disabled {
+  color: #9b9992;
+  background: #f0efeb;
+  border-color: #cfcdc7;
+  text-shadow: none;
+}
+html[data-theme="symbian"] .btn-sm { min-height: 28px; font-size: 12px; padding: 0 10px; }
+
+html[data-theme="symbian"] .btn-xl {
+  min-height: 46px;
+  font-size: 16px;
+  color: #fff;
+  background: linear-gradient(#4c88c8, #24507f);
+  border-color: #17395f;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
+}
+html[data-theme="symbian"] .btn-xl:active:not(:disabled) {
+  background: linear-gradient(#24507f, #17395f);
+}
+html[data-theme="symbian"] .btn-xl .btn-ico { color: #fff; }
+html[data-theme="symbian"] .btn-hangup { color: #8b1a1a; }
+html[data-theme="symbian"] .btn-hangup:active:not(:disabled) { color: #fff; background: linear-gradient(#b03a3a, #7e1d1d); border-color: #5f1414; }
+
+/* ============================== поля ============================== */
+
+html[data-theme="symbian"] .input,
+html[data-theme="symbian"] select.input,
+html[data-theme="symbian"] textarea.input {
+  min-height: 32px;
+  padding: 4px 8px;
+  border: 1px solid #a9a7a1;
+  border-radius: var(--s60-radius);
+  background: #fff;
+  box-shadow: none;
+  font: 13px/1.3 var(--s60-font);
+}
+html[data-theme="symbian"] .input:focus,
+html[data-theme="symbian"] select.input:focus {
+  outline: none;
+  border-color: var(--s60-blue);
+  box-shadow: 0 0 0 2px rgba(47, 107, 176, 0.22);
+}
+html[data-theme="symbian"] select.input { padding-right: 4px; }
+
+html[data-theme="symbian"] .checkbox .box {
+  width: 16px;
+  height: 16px;
+  border: 1px solid #8f8d87;
+  border-radius: 3px;
+  background: #fff;
+  box-shadow: none;
+}
+html[data-theme="symbian"] .checkbox input:checked + .box {
+  background: var(--s60-blue);
+  border-color: #1b3f6b;
+}
+html[data-theme="symbian"] .checkbox input:checked + .box::after {
+  inset: 3px;
+  background:
+    linear-gradient(45deg, transparent 42%, #fff 42%, #fff 56%, transparent 56%),
+    linear-gradient(-45deg, transparent 56%, #fff 56%, #fff 70%, transparent 70%);
+}
+
+html[data-theme="symbian"] .code-input {
+  width: 96px;
+  font-size: 18px;
+  letter-spacing: 5px;
+  text-align: center;
+}
+
+/* ============================== прогресс ============================== */
+
+html[data-theme="symbian"] .progress {
+  height: 12px;
+  padding: 1px;
+  border: 1px solid #a9a7a1;
+  border-radius: 6px;
+  background: #d9d7d1;
+  box-shadow: none;
+}
+html[data-theme="symbian"] .progress-fill { border-radius: 5px; overflow: hidden; background: none; }
+html[data-theme="symbian"] .progress-fill::before {
+  content: "";
+  left: 0;
+  right: 0;
+  background: linear-gradient(#6ea6dd, #2f6bb0);
+  border-radius: 5px;
+  animation: none;
+}
+html[data-theme="symbian"] .progress.indeterminate .progress-fill::before {
+  background: linear-gradient(90deg, #2f6bb0 0 35%, #a9c9e8 35% 55%, #2f6bb0 55% 100%);
+  background-size: 220% 100%;
+  animation: s60-bar 1.1s linear infinite;
+}
+@keyframes s60-bar {
+  from { background-position: 0% 0; }
+  to { background-position: -220% 0; }
+}
+html[data-theme="symbian"] .progress.determinate .progress-fill {
+  background: linear-gradient(#6ea6dd, #2f6bb0);
+  border-radius: 6px;
+}
+html[data-theme="symbian"] .progress-text { color: var(--s60-dim); font-size: 11.5px; margin-top: 4px; }
+html[data-theme="symbian"] .home-progress { height: 10px; }
+
+/* ============================== звонок ============================== */
+
+html[data-theme="symbian"] .call-content { gap: 8px; padding: 8px; }
+
+html[data-theme="symbian"] .call-head { gap: 8px; }
+html[data-theme="symbian"] .room-badge {
+  background: var(--s60-panel);
+  border: 1px solid var(--s60-line);
+  border-radius: var(--s60-radius);
+  padding: 4px 10px;
+  box-shadow: none;
+}
+html[data-theme="symbian"] .room-badge b { font-size: 16px; letter-spacing: 3px; }
+html[data-theme="symbian"] .room-label { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.5px; }
+html[data-theme="symbian"] .participants-count { font-size: 12px; color: var(--s60-dim); }
+
+html[data-theme="symbian"] .tiles { gap: 8px; }
+html[data-theme="symbian"] .tile {
+  background: var(--s60-panel);
+  border: 1px solid var(--s60-line);
+  border-radius: 8px;
+  box-shadow: none;
+  min-height: 108px;
+}
+html[data-theme="symbian"] .tile.speaking {
+  background: #eef5fd;
+  border-color: var(--s60-blue);
+  box-shadow: 0 0 0 2px rgba(47, 107, 176, 0.25);
+}
+html[data-theme="symbian"] .tile-name { font-size: 13.5px; }
+html[data-theme="symbian"] .tile .avatar { width: 40px; height: 40px; font-size: 17px; }
+html[data-theme="symbian"] .tile-state { color: var(--s60-dim); font-size: 11px; }
+html[data-theme="symbian"] .tile-conn { color: var(--s60-dim); }
+html[data-theme="symbian"] .tile[data-state="connected"] .tile-conn { color: #2e6b2e; }
+html[data-theme="symbian"] .tile[data-state="failed"] .tile-conn { color: #8b1a1a; }
+
+html[data-theme="symbian"] .level {
+  width: 7px;
+  height: 38px;
+  padding: 1px;
+  background: #e4e2dc;
+  border: 1px solid #cfcdc7;
+  border-radius: 3px;
+  box-shadow: none;
+}
+html[data-theme="symbian"] .level i { background: #2f6bb0; border-radius: 1px; opacity: 0.22; }
+html[data-theme="symbian"] .level i.on { opacity: 1; }
+
+html[data-theme="symbian"] .call-log {
+  background: var(--s60-panel);
+  border: 1px solid var(--s60-line);
+  border-radius: var(--s60-radius);
+  box-shadow: none;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: #2b2b2b;
+  height: 66px;
+}
+html[data-theme="symbian"] .call-log .err { color: #8b1a1a; }
+html[data-theme="symbian"] .call-log .ok { color: #2e6b2e; }
+
+html[data-theme="symbian"] .call-toolbar { gap: 6px; }
+html[data-theme="symbian"] .call-btn { min-height: 36px; font-size: 12px; }
+html[data-theme="symbian"] .call-btn.on {
+  background: linear-gradient(#3b78bd, #27568b);
+  border-color: #1b3f6b;
+  color: #fff;
+}
+
+html[data-theme="symbian"] .tile-waiting {
+  background: var(--s60-panel);
+  border: 1px dashed #b6b4ae;
+  border-radius: 8px;
+  color: var(--s60-dim);
+}
+html[data-theme="symbian"] .tile-waiting b { color: var(--s60-text); font-size: 14px; }
+
+/* полоса состояния окна — тонкая строка, как status pane */
+html[data-theme="symbian"] .statusbar {
+  gap: 0;
+  padding: 0;
+  border-top: 1px solid var(--s60-line);
+  background: #f4f3ef;
+}
+html[data-theme="symbian"] .status-cell {
+  min-height: 20px;
+  padding: 2px 10px;
+  box-shadow: none;
+  font-size: 11px;
+  color: var(--s60-dim);
+  border-right: 1px solid var(--s60-line-soft);
+}
+html[data-theme="symbian"] .status-cell:last-child { border-right: 0; }
+
+/* ============================== диалоги ============================== */
+
+html[data-theme="symbian"] .modal-layer {
+  background: rgba(10, 20, 34, 0.45);
+  padding: 16px;
+}
+html[data-theme="symbian"] .modal {
+  width: min(360px, 100%);
+  border: 1px solid #7f7d77;
+  border-radius: 8px;
+  padding: 0;
+  background: var(--s60-panel);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+html[data-theme="symbian"] .modal .titlebar {
+  height: 34px;
+  padding: 0 10px;
+  background: linear-gradient(#4c88c8, #24507f);
+  color: #fff;
+  justify-content: center;
+  font-size: 14px;
+}
+html[data-theme="symbian"] .modal .titlebar-btns { display: none; }
+html[data-theme="symbian"] .modal-icon { display: none; }
+html[data-theme="symbian"] .modal-body {
+  padding: 14px 12px;
+  color: #262626;
+}
+html[data-theme="symbian"] .modal-foot {
+  padding: 8px 10px 10px;
+  gap: 8px;
+  border-top: 1px solid var(--s60-line-soft);
+  background: #f7f6f2;
+}
+html[data-theme="symbian"] .modal-foot .btn { flex: 1 1 auto; }
+
+html[data-theme="symbian"] .field { gap: 5px; margin-bottom: 12px; }
+html[data-theme="symbian"] .field > label { font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.4px; color: var(--s60-blue-dark); }
+html[data-theme="symbian"] .small-dim { color: var(--s60-dim); font-size: 11px; }
+html[data-theme="symbian"] .mono { font-size: 10.5px; }
+html[data-theme="symbian"] .form-error { color: #8b1a1a; }
+
+html[data-theme="symbian"] .meter {
+  height: 12px;
+  padding: 1px;
+  gap: 2px;
+  background: #d9d7d1;
+  border: 1px solid #a9a7a1;
+  border-radius: 6px;
+  box-shadow: none;
+}
+html[data-theme="symbian"] .meter i { background: #2f6bb0; border-radius: 2px; }
+html[data-theme="symbian"] .meter i:nth-child(n + 8) { background: #c9a227; }
+html[data-theme="symbian"] .meter i:nth-child(n + 12) { background: #b03a3a; }
+
+html[data-theme="symbian"] .participant-line { padding: 8px 0; }
+html[data-theme="symbian"] .participant-line + .participant-line {
+  box-shadow: none;
+  border-top: 1px solid var(--s60-line-soft);
+}
+html[data-theme="symbian"] .text-block {
+  background: #f7f6f2;
+  border: 1px solid var(--s60-line-soft);
+  border-radius: var(--s60-radius);
+  padding: 10px;
+  font-size: 11px;
+  max-height: 46vh;
+}
+
+/* ============================== тосты ============================== */
+
+html[data-theme="symbian"] .toasts {
+  top: calc(var(--s60-status-h) + 10px);
+  bottom: auto;
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  align-items: stretch;
+  width: min(340px, calc(100% - 16px));
+}
+html[data-theme="symbian"] .toast {
+  background: #fdfdfb;
+  border: 1px solid #8f8d87;
+  border-radius: 6px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22);
+  padding: 9px 11px;
+  animation: s60-note 0.18s ease-out;
+}
+html[data-theme="symbian"] .toast b { font-size: 12.5px; }
+html[data-theme="symbian"] .toast span { color: #45433f; font-size: 11.5px; }
+html[data-theme="symbian"] .toast svg { color: var(--s60-blue-dark); }
+html[data-theme="symbian"] .toast.err { border-color: #a54747; }
+html[data-theme="symbian"] .toast.err svg { color: #8b1a1a; }
+@keyframes s60-note {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ============================== сплэш ============================== */
+
+html[data-theme="symbian"] .win.splash {
+  left: 50% !important;
+  top: 50% !important;
+  right: auto !important;
+  bottom: auto !important;
+  transform: translate(-50%, -50%);
+  width: min(320px, calc(100% - 32px));
+  height: auto;
+  background: var(--s60-panel);
+  border: 1px solid #7f7d77;
+  border-radius: 8px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+html[data-theme="symbian"] .win.splash.done { transform: translate(-50%, -50%) scale(0.97); }
+html[data-theme="symbian"] .win.splash > .titlebar {
+  height: 34px;
+  background: linear-gradient(#4c88c8, #24507f);
+  justify-content: center;
+}
+html[data-theme="symbian"] .splash-body { padding: 16px; }
+html[data-theme="symbian"] .splash-logo { gap: 12px; margin-bottom: 16px; }
+html[data-theme="symbian"] .splash-logo > svg {
+  border-radius: 10px;
+  background: linear-gradient(#4c88c8, #24507f);
+  box-shadow: none;
+}
+html[data-theme="symbian"] .splash-logo b { font-size: 16px; }
+html[data-theme="symbian"] .splash-foot { color: var(--s60-dim); font-size: 10px; }
+
+/* ============================== адаптив ============================== */
+
+@media (max-width: 720px) {
+  html[data-theme="symbian"] .win-content { padding: 6px; }
+  html[data-theme="symbian"] .home-content { gap: 6px; }
+  html[data-theme="symbian"] .hero-logo { width: 38px; height: 38px; }
+  html[data-theme="symbian"] .hero-text h1 { font-size: 15px; }
+  html[data-theme="symbian"] .hero-hint { display: none; }
+  html[data-theme="symbian"] .s60-key { min-width: 84px; padding: 0 10px; }
+  html[data-theme="symbian"] .s60-key-hint { font-size: 10px; }
+  html[data-theme="symbian"] .call-log { height: 52px; }
+  html[data-theme="symbian"] .status-cell { padding: 2px 8px; font-size: 10.5px; }
+  html[data-theme="symbian"] .modal { width: 100%; }
+}
+
+@media (max-width: 380px) {
+  html[data-theme="symbian"] .s60-key { min-width: 70px; font-size: 12px; }
+  html[data-theme="symbian"] .s60-key-hint { display: none; }
+  html[data-theme="symbian"] .code-input { width: 84px; }
+}

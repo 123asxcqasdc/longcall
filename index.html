@@ -10,6 +10,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%23008080'/%3E%3Crect x='1' y='1' width='14' height='14' fill='%23c0c0c0'/%3E%3Cpath d='M4 4h2l1 3-1 1a7 7 0 0 0 3 3l1-1 3 1v2a1 1 0 0 1-1 1A10 10 0 0 1 3 5a1 1 0 0 1 1-1z' fill='%23000080'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="css/win98.css">
 <link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="css/symbian.css">
 </head>
 <body class="is-booting">
 
@@ -154,6 +155,7 @@
           <button type="button" data-action="toggle-sound"><span data-i18n="menu.view.sound">Звуки системы</span><span class="menu-check" id="menuSoundCheck">✓</span></button>
           <div class="sep"></div>
           <button type="button" data-action="toggle-lang"><span data-i18n="menu.view.lang">Язык: Русский</span></button>
+          <button type="button" data-action="toggle-theme"><span id="themeMenuLabel">Тема: Windows 98</span></button>
         </div>
       </div>
       <div class="menu">
@@ -347,6 +349,7 @@
     <button type="button" class="sm-item" data-action="profile"><svg><use href="#i-user"/></svg><span data-i18n="start.profile">Профиль…</span></button>
     <button type="button" class="sm-item" data-action="settings"><svg><use href="#i-gear"/></svg><span data-i18n="start.settings">Настройки…</span></button>
     <button type="button" class="sm-item" data-action="toggle-lang"><svg><use href="#i-key"/></svg><span data-i18n="start.lang">Язык / Language</span></button>
+    <button type="button" class="sm-item" data-action="settings"><svg><use href="#i-gear"/></svg><span data-i18n="start.theme">Оформление…</span></button>
     <div class="sep"></div>
     <button type="button" class="sm-item" data-action="about"><svg><use href="#i-help"/></svg><span data-i18n="start.about">О программе…</span></button>
     <div class="sep"></div>
@@ -354,9 +357,50 @@
   </div>
 </div>
 
+<!-- ==================== SYMBIAN / NOKIA CHROME ==================== -->
+<div class="s60-chrome" id="s60Chrome" aria-hidden="false">
+  <div class="s60-status" id="s60Status">
+    <span class="s60-signal" id="s60Signal" title="Signal"><i></i><i></i><i></i><i></i><i></i></span>
+    <span class="s60-net" id="s60Net">LongCall</span>
+    <span class="s60-ind" id="s60Ind">
+      <span class="s60-mic" id="s60Mic" hidden><svg><use href="#i-mic"/></svg></span>
+      <span class="s60-batt" title="Battery"><i></i></span>
+    </span>
+    <span class="s60-clock" id="s60Clock">00:00</span>
+  </div>
+
+  <div class="s60-softkeys" id="s60Softkeys">
+    <button type="button" class="s60-key s60-key-left" id="softLeft">
+      <span class="s60-key-ico" aria-hidden="true"></span>
+      <span class="s60-key-label" id="softLeftLabel">Опции</span>
+    </button>
+    <span class="s60-key-hint" id="softHint"></span>
+    <button type="button" class="s60-key s60-key-right" id="softRight">
+      <span class="s60-key-label" id="softRightLabel">Создать</span>
+      <span class="s60-key-ico" aria-hidden="true"></span>
+    </button>
+  </div>
+</div>
+
+<div class="s60-menu hidden" id="s60Menu">
+  <div class="s60-menu-title" id="s60MenuTitle">Опции</div>
+  <div class="s60-menu-list" id="s60MenuList" role="menu"></div>
+</div>
+
 <div class="toasts" id="toasts" aria-live="polite"></div>
 <audio id="remoteAudioSink" class="hidden"></audio>
 
+<script>
+  // Тема применяется до отрисовки: без вспышки «чужого» оформления.
+  try {
+    var stored = localStorage.getItem("lc.theme");
+    var theme = stored === "symbian" || stored === "win98" ? stored : "win98";
+    document.documentElement.dataset.theme = theme;
+    document.documentElement.classList.add("theme-" + theme);
+  } catch (e) {
+    document.documentElement.dataset.theme = "win98";
+  }
+</script>
 <script type="module" src="js/main.js"></script>
 </body>
 </html>
