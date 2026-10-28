@@ -1,0 +1,426 @@
+/* ============================================================
+   win98.css — тема в стиле Windows 98
+   (собственная реализация, вдохновлена метриками 98.css)
+   ============================================================ */
+
+@font-face {
+  font-family: "MS Sans Serif";
+  src: url("../assets/fonts/ms_sans_serif.woff2") format("woff2"),
+       url("../assets/fonts/ms_sans_serif.woff") format("woff");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "MS Sans Serif";
+  src: url("../assets/fonts/ms_sans_serif_bold.woff2") format("woff2"),
+       url("../assets/fonts/ms_sans_serif_bold.woff") format("woff");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --font-ui: "MS Sans Serif", Tahoma, "Segoe UI", Verdana, sans-serif;
+  --font-mono: "Courier New", "Lucida Console", monospace;
+
+  --face: #c0c0c0;
+  --face-light: #dfdfdf;
+  --white: #ffffff;
+  --shadow: #808080;
+  --dark: #0a0a0a;
+  --navy: #000080;
+  --navy-light: #1084d0;
+  --teal: #008080;
+
+  --bevel-out:
+    inset -1px -1px 0 var(--dark),
+    inset 1px 1px 0 var(--white),
+    inset -2px -2px 0 var(--shadow),
+    inset 2px 2px 0 var(--face-light);
+  --bevel-in:
+    inset -1px -1px 0 var(--white),
+    inset 1px 1px 0 var(--shadow),
+    inset -2px -2px 0 var(--face-light),
+    inset 2px 2px 0 var(--dark);
+  --bevel-thin-in:
+    inset -1px -1px 0 var(--white),
+    inset 1px 1px 0 var(--shadow);
+  --bevel-thin-out:
+    inset -1px -1px 0 var(--shadow),
+    inset 1px 1px 0 var(--white);
+}
+
+* { box-sizing: border-box; }
+
+html, body { height: 100%; margin: 0; }
+
+body {
+  font: 11px/1.45 var(--font-ui);
+  font-synthesis-weight: none;
+  color: #000;
+  background: var(--teal);
+  overflow: hidden;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button, input, select, textarea { font: inherit; color: inherit; }
+
+button { -webkit-appearance: none; appearance: none; }
+
+h1, h2, h3, p { margin: 0; font-size: inherit; font-weight: inherit; }
+
+:focus-visible { outline: 1px dotted #000; outline-offset: -4px; }
+
+.svg-sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
+.hidden { display: none !important; }
+
+svg { display: block; }
+
+/* ---------------------------------------------------------- окно */
+.win {
+  background: var(--face);
+  box-shadow: var(--bevel-out);
+  padding: 3px;
+  display: flex;
+  flex-direction: column;
+  color: #000;
+}
+
+.win-body,
+.win-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 8px;
+}
+
+/* ------------------------------------------------------ заголовок */
+.titlebar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 18px;
+  padding: 0 2px 0 3px;
+  background: linear-gradient(90deg, var(--navy) 0%, var(--navy-light) 100%);
+  color: #fff;
+  font-weight: 700;
+  user-select: none;
+  touch-action: none;
+}
+
+.win.inactive > .titlebar {
+  background: linear-gradient(90deg, #808080 0%, #b5b5b5 100%);
+  color: #dfdfdf;
+}
+
+.titlebar-icon svg { width: 12px; height: 12px; }
+
+.titlebar-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  padding-top: 1px;
+}
+
+.titlebar-btns { display: flex; gap: 1px; }
+
+.tb-btn {
+  position: relative;
+  width: 16px;
+  height: 14px;
+  padding: 0;
+  border: 0;
+  background: var(--face);
+  box-shadow: var(--bevel-out);
+  cursor: pointer;
+}
+.tb-btn:active { box-shadow: var(--bevel-in); }
+
+.tb-btn::before, .tb-btn::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  background: #000;
+}
+
+.tb-min::before { width: 6px; height: 2px; top: 74%; }
+.tb-max::before {
+  width: 8px; height: 7px;
+  background: none;
+  border: 1px solid #000;
+  border-top-width: 2px;
+}
+.tb-close::before {
+  width: 8px; height: 8px;
+  background:
+    linear-gradient(45deg, transparent 43%, #000 43%, #000 57%, transparent 57%),
+    linear-gradient(-45deg, transparent 43%, #000 43%, #000 57%, transparent 57%);
+}
+
+/* -------------------------------------------------------- меню */
+.menubar {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  padding: 1px 0;
+  user-select: none;
+}
+
+.menubar-right { margin-left: auto; display: flex; align-items: center; gap: 2px; }
+
+.menu { position: relative; }
+
+.menu-btn {
+  background: none;
+  border: 0;
+  padding: 2px 7px;
+  cursor: default;
+  white-space: nowrap;
+}
+.menu-btn:hover,
+.menu.open > .menu-btn { background: var(--navy); color: #fff; }
+
+.dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  min-width: 200px;
+  padding: 2px;
+  background: var(--face);
+  box-shadow: var(--bevel-out);
+  z-index: 60;
+  display: none;
+}
+.menu.open > .dropdown { display: block; }
+
+.dropdown button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 4px 22px 4px 18px;
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: default;
+  white-space: nowrap;
+}
+.dropdown button:hover { background: var(--navy); color: #fff; }
+
+.dropdown .sep,
+.startmenu .sep {
+  height: 2px;
+  margin: 3px 2px;
+  box-shadow: inset 0 1px 0 var(--shadow), inset 0 -1px 0 var(--white);
+}
+
+.menu-check { margin-left: auto; font-weight: 700; }
+
+/* ------------------------------------------------------ кнопки */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 75px;
+  min-height: 23px;
+  padding: 2px 12px;
+  border: 0;
+  background: var(--face);
+  box-shadow: var(--bevel-out);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+.btn:active:not(:disabled) {
+  box-shadow: var(--bevel-in);
+  padding: 3px 11px 1px 13px;
+}
+.btn:disabled {
+  color: var(--shadow);
+  text-shadow: 1px 1px 0 var(--white);
+  cursor: default;
+}
+.btn-sm { min-width: 0; min-height: 21px; padding: 1px 8px; }
+
+.btn-ico { width: 14px; height: 14px; flex: 0 0 auto; }
+
+.btn-hangup { color: #8b0000; }
+
+/* ------------------------------------------------------ поля */
+.input,
+select.input,
+textarea.input {
+  min-height: 21px;
+  padding: 3px 4px;
+  border: 0;
+  background: #fff;
+  box-shadow: var(--bevel-in);
+  border-radius: 0;
+}
+select.input { padding-right: 2px; }
+textarea.input { resize: vertical; min-height: 70px; }
+
+.checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  user-select: none;
+  cursor: pointer;
+}
+.checkbox input { position: absolute; opacity: 0; pointer-events: none; }
+.checkbox .box {
+  width: 13px;
+  height: 13px;
+  background: #fff;
+  box-shadow: var(--bevel-in);
+  position: relative;
+  flex: 0 0 auto;
+}
+.checkbox input:checked + .box::after {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  background:
+    linear-gradient(45deg, transparent 40%, #000 40%, #000 52%, transparent 52%),
+    linear-gradient(-45deg, transparent 52%, #000 52%, #000 64%, transparent 64%);
+}
+.checkbox input:focus-visible + .box { outline: 1px dotted #000; outline-offset: 1px; }
+
+/* ------------------------------------------------- группа (fieldset) */
+.group {
+  position: relative;
+  margin-top: 12px;
+  padding: 12px 8px 8px;
+  box-shadow: inset -1px -1px 0 var(--white), inset 1px 1px 0 var(--shadow),
+              inset -2px -2px 0 var(--face-light), inset 2px 2px 0 var(--face-light);
+}
+
+.group-title {
+  position: absolute;
+  top: -7px;
+  left: 7px;
+  padding: 0 4px;
+  background: var(--face);
+}
+
+/* ------------------------------------------------------ список */
+.listbox {
+  background: #fff;
+  box-shadow: var(--bevel-in);
+  padding: 2px;
+  overflow: auto;
+  user-select: none;
+}
+
+.listbox:focus-visible { outline: none; }
+
+.list-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 5px;
+  cursor: default;
+}
+.list-row.sel { background: var(--navy); color: #fff; }
+.list-row.sel .dim { color: #c8d0ff; }
+
+.dim { color: #505050; }
+
+/* -------------------------------------------------- статус-строка */
+.statusbar {
+  display: flex;
+  gap: 2px;
+  padding-top: 2px;
+  user-select: none;
+}
+
+.status-cell {
+  min-height: 18px;
+  padding: 2px 5px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  box-shadow: inset -1px -1px 0 var(--white), inset 1px 1px 0 var(--shadow);
+  white-space: nowrap;
+}
+.status-cell.grow { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; display: block; }
+
+/* ------------------------------------------------ прогресс-бар */
+.progress {
+  height: 18px;
+  padding: 2px;
+  background: #fff;
+  box-shadow: var(--bevel-in);
+  overflow: hidden;
+}
+
+.progress-bar { position: relative; height: 100%; overflow: hidden; background: #fff; }
+
+.progress-fill {
+  position: relative;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+.progress-fill::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -10px;
+  right: 0;
+  background-image: repeating-linear-gradient(
+    90deg,
+    var(--navy) 0 6px,
+    transparent 6px 10px
+  );
+}
+
+.progress.indeterminate .progress-fill::before {
+  animation: pb-slide 0.9s linear infinite;
+}
+
+@keyframes pb-slide {
+  from { transform: translateX(0); }
+  to   { transform: translateX(10px); }
+}
+
+.progress.determinate .progress-fill { width: var(--p, 0%); transition: width 0.25s linear; }
+
+.progress-text {
+  margin-top: 5px;
+  color: #303030;
+  min-height: 15px;
+}
+
+/* ------------------------------------------------- прокрутка */
+* { scrollbar-width: auto; scrollbar-color: var(--face) #dfdfdf; }
+
+::-webkit-scrollbar { width: 16px; height: 16px; }
+::-webkit-scrollbar-track {
+  background:
+    repeating-conic-gradient(#fff 0% 25%, var(--face) 0% 50%) 0 0 / 2px 2px;
+  box-shadow: inset 1px 1px 0 var(--shadow);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--face);
+  box-shadow: var(--bevel-out);
+}
+::-webkit-scrollbar-thumb:active { box-shadow: var(--bevel-in); }
+::-webkit-scrollbar-corner { background: var(--face); }
+
+/* --------------------------------------------------- разделитель */
+.hr {
+  height: 2px;
+  margin: 10px 0;
+  box-shadow: inset 0 1px 0 var(--shadow), inset 0 -1px 0 var(--white);
+  border: 0;
+}
