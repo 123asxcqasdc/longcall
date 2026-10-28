@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<title>LongCall 98 — звонки в стиле Windows 9x</title>
+<meta name="description" content="Лёгкое веб-приложение для аудиозвонков в стиле Windows 98: групповые звонки до 4 человек, без установки и регистрации.">
+<meta name="theme-color" content="#008080">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%23008080'/%3E%3Crect x='1' y='1' width='14' height='14' fill='%23c0c0c0'/%3E%3Cpath d='M4 4h2l1 3-1 1a7 7 0 0 0 3 3l1-1 3 1v2a1 1 0 0 1-1 1A10 10 0 0 1 3 5a1 1 0 0 1 1-1z' fill='%23000080'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="css/win98.css">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body class="is-booting">
+
+<svg class="svg-sprite" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <symbol id="i-phone" viewBox="0 0 16 16">
+      <path d="M3.4 1.5h2.2l1.1 3.1-1.3 1.3a8.4 8.4 0 0 0 3.7 3.7l1.3-1.3 3.1 1.1v2.2c0 .8-.7 1.5-1.5 1.5C6.9 14 2 9.1 2 3c0-.8.6-1.5 1.4-1.5z" fill="currentColor"/>
+    </symbol>
+    <symbol id="i-phone-plus" viewBox="0 0 16 16">
+      <path d="M2.6 1.4h2.1l1 3-1.2 1.2a8 8 0 0 0 3.5 3.5L9.2 8l3 1v2.1c0 .8-.7 1.4-1.4 1.4C6 12.6 1.4 8 1.4 2.8c0-.8.6-1.4 1.2-1.4z" fill="currentColor"/>
+      <path d="M12 1.2v4.2M9.9 3.3h4.2" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="i-hangup" viewBox="0 0 16 16">
+      <path d="M2.6 1.4h2.1l1 3-1.2 1.2a8 8 0 0 0 3.5 3.5L9.2 8l3 1v2.1c0 .8-.7 1.4-1.4 1.4C6 12.6 1.4 8 1.4 2.8c0-.8.6-1.4 1.2-1.4z" fill="currentColor"/>
+      <path d="M9.6 5.4l4.4 4.4M14 5.4l-4.4 4.4" stroke="#8b0000" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="i-mic" viewBox="0 0 16 16">
+      <rect x="5.6" y="1.4" width="4.8" height="7.2" rx="2.4" fill="currentColor"/>
+      <path d="M3.4 7.4a4.6 4.6 0 0 0 9.2 0M8 12v2.4M5.6 14.4h4.8" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="i-mic-off" viewBox="0 0 16 16">
+      <path d="M5.6 5.6v3a2.4 2.4 0 0 0 3.7 2" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+      <path d="M10.4 6.8V3.8a2.4 2.4 0 0 0-4.5-1.2" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+      <path d="M3.4 7.4a4.6 4.6 0 0 0 6.8 4M8 12v2.4M5.6 14.4h4.8" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+      <path d="M1.6 1.6l12.8 12.8" stroke="#8b0000" stroke-width="1.6" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="i-users" viewBox="0 0 16 16">
+      <circle cx="6" cy="5" r="2.4" fill="currentColor"/>
+      <path d="M1.6 13.4c0-2.4 2-4.2 4.4-4.2s4.4 1.8 4.4 4.2z" fill="currentColor"/>
+      <circle cx="11.8" cy="5.6" r="1.9" fill="currentColor" opacity=".65"/>
+      <path d="M9.4 9.6c2.6-.9 5 1 5 3.8h-3.4c0-1.5-.6-2.8-1.6-3.8z" fill="currentColor" opacity=".65"/>
+    </symbol>
+    <symbol id="i-gear" viewBox="0 0 16 16">
+      <circle cx="8" cy="8" r="2.2" fill="none" stroke="currentColor" stroke-width="1.4"/>
+      <path d="M8 1.4v2M8 12.6v2M1.4 8h2M12.6 8h2M3.3 3.3l1.4 1.4M11.3 11.3l1.4 1.4M12.7 3.3l-1.4 1.4M4.7 11.3l-1.4 1.4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="i-sound" viewBox="0 0 16 16">
+      <path d="M2 6h2.4L8 3v10L4.4 10H2z" fill="currentColor"/>
+      <path d="M10.4 5.6a3.4 3.4 0 0 1 0 4.8M12.2 4a6 6 0 0 1 0 8" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="i-mute" viewBox="0 0 16 16">
+      <path d="M2 6h2.4L8 3v10L4.4 10H2z" fill="currentColor"/>
+      <path d="M10.6 6.2l4 4M14.6 6.2l-4 4" stroke="#8b0000" stroke-width="1.5" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="i-folder" viewBox="0 0 16 16">
+      <path d="M1.4 3.6h4.4l1.4 1.6h7.4v7.4H1.4z" fill="#f2c94c" stroke="#806000" stroke-width="1"/>
+      <path d="M1.4 6.4h13.2" stroke="#806000" stroke-width="1"/>
+    </symbol>
+    <symbol id="i-notepad" viewBox="0 0 16 16">
+      <path d="M2.6 1.6h8.2l2.6 2.6v10.2H2.6z" fill="#fff" stroke="#404040" stroke-width="1"/>
+      <path d="M10.4 1.8v2.8h2.8" fill="none" stroke="#404040" stroke-width="1"/>
+      <path d="M4.4 6.6h7.2M4.4 8.6h7.2M4.4 10.6h4.6" stroke="#606060" stroke-width="1"/>
+    </symbol>
+    <symbol id="i-info" viewBox="0 0 16 16">
+      <circle cx="8" cy="8" r="6.4" fill="#000080"/>
+      <path d="M8 6.6v4.6" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>
+      <circle cx="8" cy="4.6" r="1" fill="#fff"/>
+    </symbol>
+    <symbol id="i-warn" viewBox="0 0 16 16">
+      <path d="M8 1.6l6.6 12H1.4z" fill="#f2c94c" stroke="#806000" stroke-width="1"/>
+      <path d="M8 5.4v4.4" stroke="#000" stroke-width="1.8" stroke-linecap="round"/>
+      <circle cx="8" cy="11.6" r=".9" fill="#000"/>
+    </symbol>
+    <symbol id="i-key" viewBox="0 0 16 16">
+      <circle cx="5" cy="8" r="3" fill="none" stroke="#806000" stroke-width="1.4"/>
+      <path d="M8 8h6.4M12 8v2.6M10 8v2" stroke="#806000" stroke-width="1.4" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="i-refresh" viewBox="0 0 16 16">
+      <path d="M13.2 8a5.2 5.2 0 1 1-1.6-3.8" fill="none" stroke="currentColor" stroke-width="1.5"/>
+      <path d="M13.6 1.8v3.4h-3.4" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    </symbol>
+    <symbol id="i-trash" viewBox="0 0 16 16">
+      <path d="M3.4 4.6h9.2l-.8 9H4.2z" fill="none" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M2.2 4.6h11.6M6 2.6h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="i-copy" viewBox="0 0 16 16">
+      <rect x="5.4" y="1.6" width="8.2" height="9.2" fill="#fff" stroke="currentColor" stroke-width="1.2"/>
+      <path d="M3.4 4.6v9.2h7.4" fill="none" stroke="currentColor" stroke-width="1.2"/>
+    </symbol>
+    <symbol id="i-power" viewBox="0 0 16 16">
+      <path d="M8 1.8v5.4" stroke="#8b0000" stroke-width="1.8" stroke-linecap="round"/>
+      <path d="M4.4 4.2a5.2 5.2 0 1 0 7.2 0" fill="none" stroke="#8b0000" stroke-width="1.6" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="i-check" viewBox="0 0 16 16">
+      <path d="M2.8 8.6l3.4 3.4 7-8" fill="none" stroke="#006000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="i-user" viewBox="0 0 16 16">
+      <circle cx="8" cy="5.2" r="2.8" fill="currentColor"/>
+      <path d="M2.6 14c0-3 2.4-5 5.4-5s5.4 2 5.4 5z" fill="currentColor"/>
+    </symbol>
+    <symbol id="i-help" viewBox="0 0 16 16">
+      <circle cx="8" cy="8" r="6.2" fill="#f2c94c" stroke="#806000" stroke-width="1"/>
+      <path d="M6.2 6.2a1.9 1.9 0 1 1 2.6 2c-.6.4-.8.8-.8 1.6" fill="none" stroke="#000" stroke-width="1.3" stroke-linecap="round"/>
+      <circle cx="8" cy="11.9" r=".8" fill="#000"/>
+    </symbol>
+  </defs>
+</svg>
+
+<div class="desktop" id="desktop">
+  <div class="desk-icons">
+    <button type="button" class="desk-icon" id="deskIconApp">
+      <svg class="desk-icon-img"><use href="#i-phone"/></svg>
+      <span>LongCall 98</span>
+    </button>
+    <button type="button" class="desk-icon" id="deskIconReadme">
+      <svg class="desk-icon-img"><use href="#i-notepad"/></svg>
+      <span>readme.txt</span>
+    </button>
+  </div>
+
+  <div class="desk-watermark" aria-hidden="true">
+    <span>LongCall 98</span>
+    <small>audio calls · est. 1998</small>
+  </div>
+
+  <!-- ==================== HOME WINDOW ==================== -->
+  <section class="win win-home" id="winHome" aria-label="LongCall 98">
+    <div class="titlebar" data-drag="home">
+      <span class="titlebar-icon"><svg><use href="#i-phone"/></svg></span>
+      <span class="titlebar-text" data-i18n="home.title">LongCall 98 — Главная</span>
+      <span class="titlebar-btns">
+        <button type="button" class="tb-btn tb-min" data-win-min="home" aria-label="Свернуть"></button>
+        <button type="button" class="tb-btn tb-max" data-win-max="home" aria-label="Развернуть"></button>
+        <button type="button" class="tb-btn tb-close" data-win-close="home" aria-label="Закрыть"></button>
+      </span>
+    </div>
+
+    <nav class="menubar">
+      <div class="menu">
+        <button type="button" class="menu-btn" data-i18n="menu.file">Файл</button>
+        <div class="dropdown">
+          <button type="button" data-action="profile"><span data-i18n="menu.file.profile">Профиль…</span></button>
+          <button type="button" data-action="settings"><span data-i18n="menu.file.settings">Настройки звука…</span></button>
+          <div class="sep"></div>
+          <button type="button" data-action="signout"><span data-i18n="menu.file.signout">Выйти из аккаунта…</span></button>
+        </div>
+      </div>
+      <div class="menu">
+        <button type="button" class="menu-btn" data-i18n="menu.view">Вид</button>
+        <div class="dropdown">
+          <button type="button" data-action="refresh"><span data-i18n="menu.view.refresh">Обновить историю</span></button>
+          <button type="button" data-action="toggle-sound"><span data-i18n="menu.view.sound">Звуки системы</span><span class="menu-check" id="menuSoundCheck">✓</span></button>
+          <div class="sep"></div>
+          <button type="button" data-action="toggle-lang"><span data-i18n="menu.view.lang">Язык: Русский</span></button>
+        </div>
+      </div>
+      <div class="menu">
+        <button type="button" class="menu-btn" data-i18n="menu.help">Справка</button>
+        <div class="dropdown">
+          <button type="button" data-action="about"><span data-i18n="menu.help.about">О программе…</span></button>
+          <button type="button" data-action="rules"><span data-i18n="menu.help.rules">Правила базы данных…</span></button>
+          <button type="button" data-action="readme"><span data-i18n="menu.help.readme">readme.txt</span></button>
+        </div>
+      </div>
+      <span class="menubar-right">
+        <button type="button" class="menu-btn" id="langBtn" title="Language / Язык">RU</button>
+      </span>
+    </nav>
+
+    <div class="win-content home-content">
+      <div class="home-hero">
+        <div class="hero-logo"><svg><use href="#i-phone"/></svg></div>
+        <div class="hero-text">
+          <h1>LongCall 98</h1>
+          <p data-i18n="home.tagline">Лёгкое приложение для звонков прямо в браузере — без установки и регистрации.</p>
+          <p class="hero-hint" data-i18n="home.hint">Только звук, до 4 человек. Создайте звонок и отправьте друзьям код комнаты.</p>
+        </div>
+      </div>
+
+      <div class="group">
+        <span class="group-title" data-i18n="home.profile">Учётная запись</span>
+        <div class="profile-row">
+          <div class="avatar avatar-lg" id="homeAvatar">?</div>
+          <div class="profile-meta">
+            <div class="profile-nick" id="homeNick">…</div>
+            <div class="profile-uid" id="homeUid"></div>
+          </div>
+          <button type="button" class="btn" data-action="profile" data-i18n="home.editProfile">Изменить…</button>
+        </div>
+      </div>
+
+      <div class="group group-grow">
+        <span class="group-title" data-i18n="home.recent">Недавние звонки</span>
+        <div class="listbox recent-list" id="recentList" tabindex="0" aria-live="polite"></div>
+        <div class="recent-actions">
+          <button type="button" class="btn" id="btnJoinSelected" disabled><span data-i18n="home.join">Войти</span></button>
+          <button type="button" class="btn" id="btnRefreshRecent"><svg class="btn-ico"><use href="#i-refresh"/></svg><span data-i18n="home.refresh">Обновить</span></button>
+          <button type="button" class="btn" id="btnDeleteRecent" disabled><svg class="btn-ico"><use href="#i-trash"/></svg><span data-i18n="home.remove">Удалить</span></button>
+        </div>
+      </div>
+
+      <div class="home-cta">
+        <button type="button" class="btn btn-xl" id="btnCreateCall">
+          <svg class="btn-ico"><use href="#i-phone-plus"/></svg>
+          <span data-i18n="home.create">Создать звонок</span>
+        </button>
+        <div class="join-code">
+          <label for="joinCode" data-i18n="home.codeLabel">Код комнаты:</label>
+          <input id="joinCode" class="input code-input" inputmode="numeric" autocomplete="off" maxlength="4" placeholder="0000" aria-label="Код комнаты">
+          <button type="button" class="btn" id="btnJoinCode"><span data-i18n="home.joinCode">Войти</span></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="statusbar">
+      <div class="status-cell grow" id="homeStatus">Готово</div>
+      <div class="status-cell" id="homeMicState">Микрофон: —</div>
+    </div>
+  </section>
+
+  <!-- ==================== CALL WINDOW ==================== -->
+  <section class="win win-call hidden" id="winCall" aria-label="Звонок">
+    <div class="titlebar" data-drag="call">
+      <span class="titlebar-icon"><svg><use href="#i-phone"/></svg></span>
+      <span class="titlebar-text" id="callTitle">Звонок</span>
+      <span class="titlebar-btns">
+        <button type="button" class="tb-btn tb-min" data-win-min="call" aria-label="Свернуть"></button>
+        <button type="button" class="tb-btn tb-max" data-win-max="call" aria-label="Развернуть"></button>
+        <button type="button" class="tb-btn tb-close" data-win-close="call" aria-label="Завершить"></button>
+      </span>
+    </div>
+
+    <nav class="menubar">
+      <div class="menu">
+        <button type="button" class="menu-btn" data-i18n="call.menu">Звонок</button>
+        <div class="dropdown">
+          <button type="button" data-action="copy-link"><span data-i18n="call.copyLink">Скопировать ссылку</span></button>
+          <button type="button" data-action="settings"><span data-i18n="menu.file.settings">Настройки звука…</span></button>
+          <div class="sep"></div>
+          <button type="button" data-action="hangup"><span data-i18n="call.hangupMenu">Завершить звонок</span></button>
+        </div>
+      </div>
+      <div class="menu">
+        <button type="button" class="menu-btn" data-i18n="menu.help">Справка</button>
+        <div class="dropdown">
+          <button type="button" data-action="about"><span data-i18n="menu.help.about">О программе…</span></button>
+        </div>
+      </div>
+      <span class="menubar-right">
+        <button type="button" class="menu-btn" id="callLangBtn" title="Language / Язык">RU</button>
+      </span>
+    </nav>
+
+    <div class="win-content call-content">
+      <div class="call-head">
+        <div class="room-badge">
+          <span class="room-label" data-i18n="call.room">Комната</span>
+          <b id="callCode">0000</b>
+        </div>
+        <div class="call-head-actions">
+          <span class="participants-count" id="callCount">1 / 4</span>
+          <button type="button" class="btn btn-sm" id="btnCopyLink">
+            <svg class="btn-ico"><use href="#i-copy"/></svg>
+            <span data-i18n="call.copyLink">Ссылка</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="tiles" id="callTiles"></div>
+
+      <div class="call-bottom">
+        <div class="call-log" id="callLog" aria-live="polite"></div>
+        <div class="call-progress" id="callProgress">
+          <div class="progress indeterminate"><div class="progress-fill"></div></div>
+          <div class="progress-text" id="callProgressText" data-i18n="call.connecting">Подключение…</div>
+        </div>
+      </div>
+
+      <div class="call-toolbar">
+        <button type="button" class="btn call-btn" id="btnMic">
+          <svg class="btn-ico"><use href="#i-mic"/></svg>
+          <span data-i18n="call.mic">Микрофон</span>
+        </button>
+        <button type="button" class="btn call-btn" id="btnParticipants">
+          <svg class="btn-ico"><use href="#i-users"/></svg>
+          <span data-i18n="call.participants">Участники</span>
+        </button>
+        <button type="button" class="btn call-btn" id="btnCallSettings">
+          <svg class="btn-ico"><use href="#i-gear"/></svg>
+          <span data-i18n="call.settings">Настройки</span>
+        </button>
+        <button type="button" class="btn call-btn btn-hangup" id="btnHangup">
+          <svg class="btn-ico"><use href="#i-hangup"/></svg>
+          <span data-i18n="call.hangup">Завершить</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="statusbar">
+      <div class="status-cell grow" id="callStatus">Связь: установка…</div>
+      <div class="status-cell" id="callQuality">—</div>
+      <div class="status-cell" id="callDuration">00:00</div>
+    </div>
+  </section>
+
+  <!-- ==================== SPLASH ==================== -->
+  <section class="win splash" id="winSplash" aria-label="Запуск LongCall 98">
+    <div class="titlebar">
+      <span class="titlebar-icon"><svg><use href="#i-phone"/></svg></span>
+      <span class="titlebar-text">LongCall 98</span>
+    </div>
+    <div class="splash-body">
+      <div class="splash-logo">
+        <svg><use href="#i-phone"/></svg>
+        <div>
+          <b>LongCall 98</b>
+          <small>версия 1.0 · Windows 9x Edition</small>
+        </div>
+      </div>
+      <div class="progress indeterminate"><div class="progress-fill"></div></div>
+      <div class="progress-text" id="bootStage" data-i18n="boot.stage1">Загрузка LongCall 98…</div>
+      <div class="splash-foot">© 1998—2026 LongCall Systems</div>
+    </div>
+  </section>
+</div>
+
+<!-- ==================== TASKBAR ==================== -->
+<div class="taskbar" id="taskbar">
+  <button type="button" class="btn start-btn" id="startBtn">
+    <span class="start-logo" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+    <span data-i18n="start.title">Пуск</span>
+  </button>
+  <span class="taskbar-sep"></span>
+  <div class="taskbar-tasks" id="taskbarTasks"></div>
+  <div class="tray" id="tray">
+    <button type="button" class="tray-btn" id="traySound" title="Звуки">
+      <svg><use href="#i-sound"/></svg>
+    </button>
+    <span class="tray-clock" id="trayClock">00:00</span>
+  </div>
+</div>
+
+<div class="startmenu hidden" id="startMenu">
+  <div class="startmenu-side">LongCall 98</div>
+  <div class="startmenu-items">
+    <button type="button" class="sm-item" data-action="profile"><svg><use href="#i-user"/></svg><span data-i18n="start.profile">Профиль…</span></button>
+    <button type="button" class="sm-item" data-action="settings"><svg><use href="#i-gear"/></svg><span data-i18n="start.settings">Настройки…</span></button>
+    <button type="button" class="sm-item" data-action="toggle-lang"><svg><use href="#i-key"/></svg><span data-i18n="start.lang">Язык / Language</span></button>
+    <div class="sep"></div>
+    <button type="button" class="sm-item" data-action="about"><svg><use href="#i-help"/></svg><span data-i18n="start.about">О программе…</span></button>
+    <button type="button" class="sm-item" data-action="rules"><svg><use href="#i-warn"/></svg><span data-i18n="start.rules">Правила базы данных…</span></button>
+    <div class="sep"></div>
+    <button type="button" class="sm-item" data-action="signout"><svg><use href="#i-power"/></svg><span data-i18n="start.signout">Выйти из аккаунта…</span></button>
+  </div>
+</div>
+
+<div class="toasts" id="toasts" aria-live="polite"></div>
+<audio id="remoteAudioSink" class="hidden"></audio>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
