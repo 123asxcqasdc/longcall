@@ -45,7 +45,6 @@ const DICT = {
     "menu.view.lang": "Язык интерфейса",
     "menu.help": "Справка",
     "menu.help.about": "О программе…",
-    "menu.help.rules": "Правила базы данных…",
     "menu.help.readme": "readme.txt",
 
     "start.title": "Пуск",
@@ -53,7 +52,6 @@ const DICT = {
     "start.settings": "Настройки…",
     "start.lang": "Язык / Language",
     "start.about": "О программе…",
-    "start.rules": "Правила базы данных…",
     "start.signout": "Выйти из аккаунта…",
 
     "boot.stage1": "Загрузка LongCall 98…",
@@ -168,14 +166,6 @@ const DICT = {
     "modal.about.p3": "До 4 участников. Видео не поддерживается. Регистрация локальная, паролей нет.",
     "modal.about.p4": "Сборка {v} · GitHub Pages · {year}",
 
-    "modal.rules.title": "Правила базы данных",
-    "modal.rules.intro": "Чтобы сигналинг работал и данные не были открыты всему интернету, вставьте эти правила в Firebase Console → Realtime Database → Rules:",
-    "modal.rules.step1": "Откройте консоль Firebase проекта longcall.",
-    "modal.rules.step2": "Authentication → Sign-in method → включите Anonymous.",
-    "modal.rules.step3": "Authentication → Settings → Authorized domains → добавьте {host}.",
-    "modal.rules.auth": "Авторизованные домены",
-    "modal.rules.copy": "Копировать JSON",
-
     "modal.readme.title": "readme.txt",
     "modal.readme.body": "LONGCALL 98 — КАК ЭТО РАБОТАЕТ\n\n1. Введите имя — аккаунт создастся локально.\n2. Нажмите «Создать звонок» или введите код комнаты.\n3. Отправьте друзьям код или ссылку.\n4. Разрешите браузеру доступ к микрофону.\n5. Говорите: до 4 человек в комнате.\n\nЗвук идёт напрямую между участниками,\nFirebase передаёт только служебные сообщения.\n\nСовет: наушники уменьшают эхо.",
 
@@ -187,7 +177,7 @@ const DICT = {
     "err.auth": "Не удалось войти в Firebase. Проверьте, что включён анонимный вход и добавлен авторизованный домен {host}.",
     "err.network": "Нет связи с сервером сигналинга. Проверьте интернет и повторите попытку.",
     "err.full": "В комнате уже {max} участника.",
-    "err.rules": "Firebase отклонил запрос. Примените правила базы данных: меню «Справка» → «Правила базы данных…».",
+    "err.rules": "Firebase отклонил запрос. Проверьте правила Realtime Database в консоли проекта.",
     "err.room": "Комната недоступна.",
     "err.generic": "Что-то пошло не так: {msg}",
     "err.code": "Код комнаты — четыре цифры.",
@@ -257,7 +247,6 @@ const DICT = {
     "menu.view.lang": "Interface language",
     "menu.help": "Help",
     "menu.help.about": "About…",
-    "menu.help.rules": "Database rules…",
     "menu.help.readme": "readme.txt",
 
     "start.title": "Start",
@@ -265,7 +254,6 @@ const DICT = {
     "start.settings": "Settings…",
     "start.lang": "Язык / Language",
     "start.about": "About…",
-    "start.rules": "Database rules…",
     "start.signout": "Sign out…",
 
     "boot.stage1": "Starting LongCall 98…",
@@ -380,14 +368,6 @@ const DICT = {
     "modal.about.p3": "Up to 4 people. No video. Local sign-up, no passwords.",
     "modal.about.p4": "Build {v} · GitHub Pages · {year}",
 
-    "modal.rules.title": "Database rules",
-    "modal.rules.intro": "Paste these rules into Firebase Console → Realtime Database → Rules so signalling works and data is not world-readable:",
-    "modal.rules.step1": "Open the Firebase console of the longcall project.",
-    "modal.rules.step2": "Authentication → Sign-in method → enable Anonymous.",
-    "modal.rules.step3": "Authentication → Settings → Authorized domains → add {host}.",
-    "modal.rules.auth": "Authorized domains",
-    "modal.rules.copy": "Copy JSON",
-
     "modal.readme.title": "readme.txt",
     "modal.readme.body": "LONGCALL 98 — HOW IT WORKS\n\n1. Enter a name — the account is created locally.\n2. Press “Start a call” or type a room code.\n3. Send the code or the link to your friends.\n4. Allow microphone access in the browser.\n5. Talk: up to 4 people per room.\n\nSound goes directly between people;\nFirebase carries signalling messages only.\n\nTip: headphones reduce echo.",
 
@@ -399,7 +379,7 @@ const DICT = {
     "err.auth": "Firebase sign-in failed. Check that anonymous auth is enabled and {host} is an authorized domain.",
     "err.network": "No connection to the signalling server. Check the network and retry.",
     "err.full": "Room already has {max} people.",
-    "err.rules": "Firebase rejected the request. Apply the database rules: Help → Database rules….",
+    "err.rules": "Firebase rejected the request. Check the Realtime Database rules in the project console.",
     "err.room": "The room is unavailable.",
     "err.generic": "Something went wrong: {msg}",
     "err.code": "A room code is four digits.",
