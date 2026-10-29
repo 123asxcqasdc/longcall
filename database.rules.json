@@ -30,6 +30,15 @@
         ".read": "auth != null && auth.uid === $uid",
         ".write": "auth != null && auth.uid === $uid"
       }
+    },
+    "logs": {
+      "$room": {
+        ".read": "auth != null",
+        ".write": "auth != null",
+        "$report": {
+          ".validate": "newData.hasChildren(['v','code','env','peers'])"
+        }
+      }
     }
   }
 }

@@ -71,16 +71,16 @@ npm run dist:win     # установщик (setup.exe) + portable.exe → relea
 
 | Файл | Что это |
 | --- | --- |
-| `longcall98-1.0.2-setup.exe` | мастер установки (NSIS, `oneClick: false`) |
-| `longcall98-1.0.2-portable.exe` | запуск без установки |
-| `longcall98-1.0.2-x86_64.AppImage` | Linux, без установки |
-| `longcall98-1.0.2-amd64.deb` | Linux, Debian/Ubuntu |
+| `longcall98-1.0.3-setup.exe` | мастер установки (NSIS, `oneClick: false`) |
+| `longcall98-1.0.3-portable.exe` | запуск без установки |
+| `longcall98-1.0.3-x86_64.AppImage` | Linux, без установки |
+| `longcall98-1.0.3-amd64.deb` | Linux, Debian/Ubuntu |
 
 Workflow [`.github/workflows/desktop.yml`](.github/workflows/desktop.yml) собирает оба
 варианта на GitHub-раннерах и прикрепляет файлы к релизу при пуше тега `v*`:
 
 ```bash
-git tag v1.0.2 && git push origin v1.0.2
+git tag v1.0.3 && git push origin v1.0.3
 ```
 
 Иконки пересобираются скриптом `tools/make-icons.py` (нужен Pillow, только для разработки):
@@ -135,23 +135,51 @@ Windows-сборка не подписана — SmartScreen может пока
 
 STUN только сообщает адреса; если участник за симметричным NAT, CGNAT мобильного
 оператора или корпоративным файрволом, прямой канал невозможен и нужен
-ретранслятор TURN. В `js/config.js` подключены:
+ретранслятор TURN.
 
-- **STUN**: Google (2 адреса), Cloudflare, Open Relay;
-- **TURN**: публичный бесплатный Open Relay Project (Metered) — 20 ГБ/мес,
-  без регистрации, порты 80 и 443, включая `?transport=tcp` и `turns:` (TLS).
-  Это спасает в сетях, где разрешён только HTTPS.
+`js/config.js` + `js/turn.js`:
 
-Подключение идёт с `iceTransportPolicy: "all"`: сначала пробуется прямой канал,
-ретранслятор — как запасной путь. В журнале звонка видно, какие кандидаты
-собрались: `ICE ник: host 2 · srflx 1 · relay 2`. Если `relay 0` и соединение
-упало, приложение показывает подсказку «ретранслятор недоступен, сеть блокирует
-UDP» вместо молчаливого «connection failed».
+- **STUN**: Google (2 адреса), Cloudflare, Open Relay.
+- **TURN**: `staticauth.openrelay.metered.ca` (Open Relay от Metered, 20 ГБ/мес).
+  Статический логин `openrelayproject/openrelayproject` провайдер отключил, поэтому
+  креды **подписываются в браузере**: `username = "<expiry>:longcall"`,
+  `credential = base64(HMAC-SHA1(secret, username))` через WebCrypto, срок 12 часов,
+  кэш один час. Порты 80, 443, `?transport=tcp` и `turns:` (TLS) — последние
+  проходят там, где разрешён только HTTPS.
+- **Запасной вариант**: `freeturn.net` (сторонние креды) и STUN — если WebCrypto
+  недоступен, звонок не ломается, просто остаётся без ретранслятора.
 
-Свой TURN-сервер добавляется одним объектом в `TURN_SERVERS` (`turn:IP:3478`,
-`turns:IP:5349`, логин и пароль); порядок в массиве = приоритет.
+Соединение идёт с `iceTransportPolicy: "all"`: сначала пробуется прямой канал,
+ретранслятор — запасной путь. В журнале звонка видно `ICE ник: host 2 · srflx 1 · relay 2`
+и `канал: relay (udp)` — то есть идёт ли звук через ретранслятор.
 
-### Как устроено
+### Диагностика: отчёты в Firebase
+
+Когда соединиться не удалось, отчёт собирается и отправляется **автоматически**
+(после исчерпания перезапусков ICE). Вручную — «Справка → Отправить отчёт о проблеме…».
+
+Что внутри отчёта (`js/diagnostics.js`):
+
+- версия приложения, платформа (браузер/Electron, ОС, Chrome/Electron-версия),
+  часовой пояс, разрешение экрана, `navigator.onLine`;
+- набор ICE-серверов **без паролей**, признак `turn: signed|static|none` и причина;
+- по каждому участнику: вежливость, типы кандидатов `host/srflx/relay`, время до
+  первого кандидата, история `iceGatheringState`/`iceConnectionState`/`connectionState`;
+- `getStats()`: какая пара выбрана — `direct` или `relay`, протокол, до 12 пар;
+- ошибки `getUserMedia` и `negotiate`, таймлайн до 120 событий с миллисекундами.
+
+Приватность: пароли TURN, ник и uid не сохраняются (uid хешируется SHA-256), SDP и
+IP-адреса кандидатов не пишутся — только типы и счётчики.
+
+Куда: `logs/{room}/{pushId}`. Если правила базы не разрешают запись — автоматически
+в `users/{uid}/diagnostics/{pushId}` (этот путь разрешён текущими правилами).
+Короткий код отчёта показывается в тосте и в журнале звонка.
+
+> В `database.rules.json` добавлен узел `logs`. Чтобы отчёты попадали именно в
+> `logs/{room}`, правила нужно задеплоить: `firebase deploy --only database`.
+> Без деплоя отчёты сохраняются в запасной путь `users/{uid}/diagnostics`.
+
+### Как устроено### Как устроено
 
 ```
 electron/main.cjs      главный процесс: окна, протокол app://, IPC, разрешения

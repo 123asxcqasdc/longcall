@@ -11,6 +11,7 @@ import {
 } from "../vendor/firebase.js";
 import { db } from "./firebase.js";
 import { APP, ICE_SERVERS, ICE_RESTART_LIMIT } from "./config.js";
+import { CallDiagnostics } from "./diagnostics.js";
 import { AppError } from "./util.js";
 
 /**
@@ -27,11 +28,14 @@ import { AppError } from "./util.js";
  * одновременные offer'ы без дополнительного обмена.
  */
 export class CallSession {
-  constructor({ code, me, audio, handlers = {} }) {
+  constructor({ code, me, audio, handlers = {}, iceServers = null, diagnostics = null }) {
     this.code = code;
     this.me = { uid: me.uid, nick: me.nick };
     this.audio = audio;
     this.h = handlers;
+    // ICE-серверы с подписанными TURN-кредами и объект диагностики
+    // приходят из main.js до создания сессии.
+    this.options = { iceServers, diagnostics };
 
     this.peers = new Map();
     this.participants = {};
@@ -45,6 +49,16 @@ export class CallSession {
   }
 
   /* ------------------------------- утилиты ------------------------------- */
+
+  /** Набор ICE-серверов, полученный до создания сессии (см. js/turn.js). */
+  get iceConfig() {
+    return this.options?.iceServers || ICE_SERVERS;
+  }
+
+  /** Объект диагностики или null. */
+  get diagnostics() {
+    return this.options?.diagnostics || null;
+  }
 
   log(text, tone = "") {
     this.h.onLog?.(text, tone);
@@ -259,7 +273,7 @@ export class CallSession {
     }
 
     const pc = new RTCPeerConnection({
-      iceServers: ICE_SERVERS,
+      iceServers: this.iceConfig,
       // все типы кандидатов: host, srflx (STUN) и relay (TURN).
       // Прямой канал пробуем первым, ретранслятор — как запасной путь.
       iceTransportPolicy: "all",
@@ -309,6 +323,7 @@ export class CallSession {
       // звонок пройдёт даже через строгий NAT.
       const type = event.candidate.type || "host";
       peer.iceCounts[type] = (peer.iceCounts[type] || 0) + 1;
+      this.diagnostics?.candidate(uid, type);
       this.sendSignal(uid, {
         type: "ice",
         candidate: event.candidate.toJSON(),
@@ -316,6 +331,7 @@ export class CallSession {
     });
 
     pc.addEventListener("icegatheringstatechange", () => {
+      this.diagnostics?.gathering(uid, pc.iceGatheringState);
       if (pc.iceGatheringState !== "complete" || this.closed) return;
       this.reportIce(peer);
     });
@@ -327,11 +343,15 @@ export class CallSession {
     });
 
     pc.addEventListener("connectionstatechange", () => {
+      this.diagnostics?.connectionState(uid, pc.connectionState);
       this.updatePeerState(peer);
     });
     pc.addEventListener("iceconnectionstatechange", () => {
+      this.diagnostics?.iceState(uid, pc.iceConnectionState);
       if (pc.iceConnectionState === "failed") this.scheduleRestart(peer);
     });
+
+    this.diagnostics?.peerCreated(uid, { polite: peer.polite, pc });
 
     this.log(`peer ${peer.nick}: ${peer.polite ? "polite" : "impolite"}`, "");
     this.h.onPeer?.(uid, this.peerInfo(peer));
@@ -341,6 +361,19 @@ export class CallSession {
       this.negotiate(peer).catch(() => {});
     }
     return peer;
+  }
+
+  /** Сохраняем в диагностику, какая пара реально выбрана (direct или relay). */
+  async recordSelectedPair(peer) {
+    const stats = await CallDiagnostics.readStats(peer.pc);
+    if (!stats?.selected) return;
+    peer.selectedPair = stats.selected;
+    this.diagnostics?.setSelectedPair(peer.uid, stats.selected);
+    const via = stats.selected.localType === "relay" || stats.selected.remoteType === "relay"
+      ? "relay"
+      : "direct";
+    this.log(`канал: ${via} (${stats.selected.protocol || "?"})`, "");
+    this.h.onChannel?.(peer.uid, { via, ...stats.selected });
   }
 
   /**
@@ -389,6 +422,7 @@ export class CallSession {
       peer.restartCount = 0;
       clearTimeout(peer.restartTimer);
       this.log(`connected: ${peer.nick}`, "ok");
+      this.recordSelectedPair(peer);
       this.h.onPeerConnected?.(peer.uid, peer.nick);
     }
     if (state === "failed") {

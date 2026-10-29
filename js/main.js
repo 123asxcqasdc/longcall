@@ -11,6 +11,8 @@ import {
 import { APP } from "./config.js";
 import { audioEngine } from "./audio.js";
 import { CallSession } from "./call.js";
+import { resolveIceServers, resetIceCache } from "./turn.js";
+import { CallDiagnostics } from "./diagnostics.js";
 import { CallView } from "./callui.js";
 import {
   $,
@@ -79,6 +81,8 @@ let wm = null;
 // true, когда окно закрывает система (кнопка ×, Alt+F4, выход из приложения)
 let systemClosing = false;
 const inCallWindow = () => isDesktop && desktopView === "call";
+// Последний отправленный диагностический отчёт: { id, path, ok }
+let lastReport = null;
 
 /* =========================================================================
    Загрузка и «вход»
@@ -613,10 +617,32 @@ async function openCall(code) {
   url.searchParams.set("room", code);
   history.replaceState({}, "", url);
 
+  // TURN-креды подписываются в браузере (WebCrypto), поэтому набор
+  // ICE-серверов получаем заранее. При сбое подписи звонок не ломается:
+  // остаются STUN и запасные серверы.
+  let ice = null;
+  try {
+    ice = await resolveIceServers();
+  } catch (err) {
+    ice = { servers: null, turn: "none", reason: err?.message || "resolve-failed" };
+  }
+  if (ice?.turn === "none") {
+    callView.log(`TURN: ${ice.reason || "недоступен"}`, "warn");
+  }
+
+  const diagnostics = new CallDiagnostics({
+    code,
+    uid: state.uid,
+    nick: state.nick,
+    ice,
+  });
+
   const session = new CallSession({
     code,
     me: { uid: state.uid, nick: state.nick },
     audio: audioEngine,
+    iceServers: ice?.servers || undefined,
+    diagnostics,
     handlers: {
       onLog: (text, tone) => callView.log(text, tone),
       // Прямой канал не установился и relay-кандидатов нет: почти наверняка
@@ -630,6 +656,9 @@ async function openCall(code) {
           icon: "i-warn",
           tone: "error",
         });
+        // Автоматически отправляем подробный отчёт в базу, чтобы понять
+        // причину: какие кандидаты собрались и что ответил TURN.
+        sendDiagnostics({ auto: true });
       },
       onProgress: ({ key, params }) => {
         if (key === "call.progress.peers" && !params?.total) return;
@@ -855,6 +884,49 @@ async function copyRoomLink() {
     icon: "i-copy",
     tone: ok ? "info" : "error",
   });
+}
+
+/**
+ * Отправляет диагностический отчёт в Firebase.
+ *
+ * Вызывается автоматически при сбое соединения и вручную из меню «Справка».
+ * В журнал звонка и в тост попадает короткий код отчёта — по нему легко
+ * найти запись в консоли Firebase.
+ */
+async function sendDiagnostics({ auto = false } = {}) {
+  const diagnostics = state.session?.options?.diagnostics;
+  if (!diagnostics) {
+    if (!auto) toast({ title: t("diag.noneTitle"), text: t("diag.noneText"), icon: "i-info" });
+    return null;
+  }
+
+  const result = await diagnostics.send({ manual: !auto });
+  lastReport = result;
+
+  if (result.ok) {
+    const code = result.id || "ok";
+    callView.log(t("diag.sent", { id: code }), "ok");
+    if (!auto || state.session?.diagnosticsNotified !== true) {
+      toast({
+        title: t("diag.sentTitle"),
+        text: t("diag.sentText", { id: code }),
+        icon: "i-copy",
+        tone: "info",
+      });
+      if (state.session) state.session.diagnosticsNotified = true;
+    }
+  } else {
+    callView.log(t("diag.failed", { err: result.error || "" }), "err");
+    if (!auto) {
+      toast({
+        title: t("diag.failedTitle"),
+        text: t("diag.failedText", { err: result.error || "" }),
+        icon: "i-warn",
+        tone: "error",
+      });
+    }
+  }
+  return result;
 }
 
 /**
@@ -1269,6 +1341,9 @@ async function handleAction(action) {
       break;
     case "open-in-app":
       openInApp();
+      break;
+    case "send-report":
+      sendDiagnostics({ auto: false });
       break;
     case "hangup":
       if (state.session) hangup();
