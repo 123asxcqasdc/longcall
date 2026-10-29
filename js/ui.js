@@ -1,5 +1,6 @@
 import { t } from "./i18n.js";
 import { $, $$, el, svgUse } from "./util.js";
+import { isDesktop, bindNativeControls } from "./desktop.js";
 
 /* ================================ тосты ================================ */
 
@@ -186,7 +187,7 @@ export class WindowManager {
     });
   }
 
-  register(key, winEl, { label, icon = "i-phone", onClose } = {}) {
+  register(key, winEl, { label, icon = "i-phone", onClose, nativeControls = false } = {}) {
     const entry = {
       key,
       el: winEl,
@@ -197,6 +198,14 @@ export class WindowManager {
       open: !winEl.classList.contains("hidden"),
     };
     this.wins.set(key, entry);
+
+    // В обёртке окно настоящий BrowserWindow: заголовок тянет его целиком,
+    // а кнопки управляют системным окном через главный процесс.
+    if (nativeControls && isDesktop) {
+      bindNativeControls(winEl);
+      winEl.addEventListener("pointerdown", () => this.focus(key), true);
+      return entry;
+    }
 
     const titlebar = winEl.querySelector(".titlebar");
     if (titlebar && titlebar.dataset.drag === key) this.makeDraggable(entry);
