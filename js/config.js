@@ -24,7 +24,7 @@ export const APP_SCHEME = "longcall";
 
 export const APP = {
   name: "LongCall 98",
-  version: "1.0.2",
+  version: "1.0.3",
   maxParticipants: 4,
   maxRecent: 12,
   roomCodeLength: 4,
@@ -50,41 +50,33 @@ export const STUN_SERVERS = [
 
 // TURN — ретранслятор. Нужен там, где прямой канал невозможен: симметричный
 // NAT, CGNAT мобильного оператора, корпоративный файрвол. Без него звонок
-// между разными городами часто не устанавливается вообще.
+// между разными городами не устанавливается.
 //
-// Используем публичный бесплатный Open Relay Project (Metered): 20 ГБ
-// ретрансляции в месяц, регистрация не нужна, работает на 80/443, включая
-// TCP и TLS — это важно, потому что многие сети пропускают только 443/TCP.
-// Документация и свои ключи: https://www.metered.ca/tools/openrelay/
-//
-// Если понадобится свой сервер, сюда же добавляется ещё один объект:
-//   { urls: ["turn:МОЙ.СЕРВЕР:3478", "turns:МОЙ.СЕРВЕР:5349?transport=tcp"],
-//     username: "…", credential: "…" }
-// TURN-серверы перечисляются от лучшего к запасному: браузер сам выберет
-// тот, который ответит.
-export const TURN_SERVERS = [
-  // порт 80: проходит почти везде
+// Публичный статический логин openrelayproject/openrelayproject больше не
+// работает: Metered его отключил. Сейчас используются временные подписанные
+// креды их же схемы (см. js/turn.js) — аккаунт не нужен.
+export const TURN_STATICAUTH = {
+  host: "staticauth.openrelay.metered.ca",
+  // Публичный секрет shared-secret схемы Open Relay, не путать с ключом
+  // аккаунта Metered. Подпись считается в браузере через WebCrypto.
+  secret: "openrelayprojectsecret",
+  userPrefix: "longcall",
+  ttlHours: 12,
+};
+
+// Запасные статические ретрансляторы (без подписи). Используются, если
+// основная схема недоступна; часть сетей проходит и через них.
+export const TURN_FALLBACK = [
   {
-    urls: [
-      "turn:openrelay.metered.ca:80",
-      "turn:openrelay.metered.ca:80?transport=tcp",
-    ],
-    username: "openrelayproject",
-    credential: "openrelayproject",
-  },
-  // 443/TCP и TLS: для сетей, где разрешён только HTTPS
-  {
-    urls: [
-      "turn:openrelay.metered.ca:443",
-      "turn:openrelay.metered.ca:443?transport=tcp",
-      "turns:openrelay.metered.ca:443?transport=tcp",
-    ],
-    username: "openrelayproject",
-    credential: "openrelayproject",
+    urls: ["turn:freeturn.net:3478", "turn:freeturn.net:3478?transport=tcp"],
+    username: "free",
+    credential: "free",
   },
 ];
 
-export const ICE_SERVERS = [...STUN_SERVERS, ...TURN_SERVERS];
+// Синхронный набор на случай, если подпись недоступна: STUN + запасной TURN.
+// Основной путь — resolveIceServers() из js/turn.js.
+export const ICE_SERVERS = [...STUN_SERVERS, ...TURN_FALLBACK];
 
 // Сколько раз пробовать перезапуск ICE, прежде чем показать подсказку про сеть.
 export const ICE_RESTART_LIMIT = 4;

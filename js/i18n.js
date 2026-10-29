@@ -153,6 +153,16 @@ const DICT = {
     "err.iceTitle": "Не удалось соединиться",
     "err.iceText": "Прямой канал не установился, а ретранслятор (TURN) недоступен. Обычно это значит, что сеть блокирует UDP или TURN-сервер не отвечает. Попробуйте другую сеть или мобильный интернет.",
     "modal.join.hint": "Если приложение LongCall 98 установлено, ссылка откроет его.",
+    "menu.help.report": "Отправить отчёт о проблеме…",
+    "diag.sentTitle": "Отчёт отправлен",
+    "diag.sentText": "Код отчёта: {id}. По нему можно найти запись в базе.",
+    "diag.sent": "отчёт отправлен: {id}",
+    "diag.failedTitle": "Отчёт не отправлен",
+    "diag.failedText": "Не удалось записать отчёт: {err}",
+    "diag.failed": "отчёт не отправлен: {err}",
+    "diag.noneTitle": "Нет данных",
+    "diag.noneText": "Отчёт можно отправить во время звонка.",
+
 
     "modal.notfound.title": "Комната не найдена",
     "modal.notfound.text": "Комнаты {code} сейчас нет: возможно, в ней уже никого. Создать её заново?",
@@ -362,6 +372,16 @@ const DICT = {
     "err.iceTitle": "Could not connect",
     "err.iceText": "The direct channel failed and the TURN relay is unreachable. This usually means the network blocks UDP or the TURN server does not respond. Try another network or mobile data.",
     "modal.join.hint": "If LongCall 98 is installed, the link will open it.",
+    "menu.help.report": "Send a problem report…",
+    "diag.sentTitle": "Report sent",
+    "diag.sentText": "Report code: {id}. Use it to find the record in the database.",
+    "diag.sent": "report sent: {id}",
+    "diag.failedTitle": "Report not sent",
+    "diag.failedText": "Could not save the report: {err}",
+    "diag.failed": "report not sent: {err}",
+    "diag.noneTitle": "No data",
+    "diag.noneText": "A report can be sent during a call.",
+
 
     "modal.notfound.title": "Room not found",
     "modal.notfound.text": "Room {code} does not exist right now — maybe it is empty. Create it again?",
