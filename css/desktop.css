@@ -125,6 +125,9 @@ html.is-desktop.is-maximized .tb-max::before {
   box-shadow: 2px -2px 0 -1px var(--face), 2px -2px 0 0 #000;
 }
 
+/* Пункты, которые нужны только в браузере (переход в приложение по longcall://) */
+html.is-desktop .only-web { display: none !important; }
+
 /* Всплывающие уведомления не должны перекрывать кнопки окна */
 html.is-desktop .toasts {
   bottom: 8px;

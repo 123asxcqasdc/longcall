@@ -71,16 +71,16 @@ npm run dist:win     # установщик (setup.exe) + portable.exe → relea
 
 | Файл | Что это |
 | --- | --- |
-| `longcall98-1.0.0-setup.exe` | мастер установки (NSIS, `oneClick: false`) |
-| `longcall98-1.0.0-portable.exe` | запуск без установки |
-| `longcall98-1.0.0-x86_64.AppImage` | Linux, без установки |
-| `longcall98-1.0.0-amd64.deb` | Linux, Debian/Ubuntu |
+| `longcall98-1.0.1-setup.exe` | мастер установки (NSIS, `oneClick: false`) |
+| `longcall98-1.0.1-portable.exe` | запуск без установки |
+| `longcall98-1.0.1-x86_64.AppImage` | Linux, без установки |
+| `longcall98-1.0.1-amd64.deb` | Linux, Debian/Ubuntu |
 
 Workflow [`.github/workflows/desktop.yml`](.github/workflows/desktop.yml) собирает оба
 варианта на GitHub-раннерах и прикрепляет файлы к релизу при пуше тега `v*`:
 
 ```bash
-git tag v1.0.0 && git push origin v1.0.0
+git tag v1.0.1 && git push origin v1.0.1
 ```
 
 Иконки пересобираются скриптом `tools/make-icons.py` (нужен Pillow, только для разработки):
@@ -102,8 +102,16 @@ Windows-сборка не подписана — SmartScreen может пока
   `longcall://join?room=1234` — в браузере для этого есть кнопка «Открыть в приложении»
   в окне приглашения. Если приложение не установлено, ничего не произойдёт,
   и звонок останется в браузере.
-- Приложение понимает ссылку и при запуске (`longcall://join?…` в аргументах),
+- Приложение понимает ссылку и при запуске (аргументы командной строки),
   и когда уже работает (`second-instance`), и на macOS (`open-url`).
+- Формы ссылки: `longcall://join?room=1234`, `longcall://join/1234`,
+  `longcall://room/1234`, `longcall://1234` и старый `--room=1234`.
+  Ссылка на уже открытую комнату поднимает её окно, а не создаёт второе.
+- Регистрация схемы: на Windows — установщик NSIS (`protocols` в `package.json`)
+  плюс `setAsDefaultProtocolClient` при старте (важно для portable-сборки);
+  на Linux `.desktop` с `MimeType=x-scheme-handler/longcall` пишется при первом
+  запуске в `~/.local/share/applications` и вызывается `xdg-mime default` —
+  без этого AppImage вообще не открывал бы ссылки.
 
 ### Как устроено
 

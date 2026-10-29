@@ -1,6 +1,6 @@
 {
   "name": "longcall",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "type": "module",
   "description": "LongCall 98 — лёгкие аудиозвонки в стиле Windows 9x (веб + приложение для Windows и Linux)",

@@ -845,6 +845,27 @@ async function copyRoomLink() {
   });
 }
 
+/**
+ * Передаёт комнату настольному приложению по схеме longcall://.
+ * Если приложение не установлено, браузер просто ничего не откроет —
+ * звонок остаётся в браузере, поэтому сначала показываем подсказку.
+ */
+function openInApp() {
+  if (!state.activeCode) return;
+  const go = () => {
+    location.href = appRoomUrl(state.activeCode);
+  };
+  openModal({
+    title: t("call.openAppTitle"),
+    icon: "i-phone",
+    body: el("p", { text: t("call.openAppHint") }),
+    buttons: [
+      { label: t("call.openApp"), onClick: go },
+      { label: t("common.cancel"), onClick: () => {} },
+    ],
+  });
+}
+
 /* =========================================================================
    Микрофон
    ========================================================================= */
@@ -1234,6 +1255,9 @@ async function handleAction(action) {
     case "copy-link":
       copyRoomLink();
       break;
+    case "open-in-app":
+      openInApp();
+      break;
     case "hangup":
       if (state.session) hangup();
       break;
@@ -1383,6 +1407,13 @@ function setupChrome() {
   $("#btnCallSettings")?.addEventListener("click", openSettings);
   $("#btnHangup")?.addEventListener("click", () => hangup());
   $("#btnCopyLink")?.addEventListener("click", copyRoomLink);
+
+  // Кнопка «В приложении» нужна только в браузере: в обёртке комната уже там.
+  const openAppBtn = $("#btnOpenApp");
+  if (openAppBtn && !isDesktop) {
+    openAppBtn.hidden = false;
+    openAppBtn.addEventListener("click", openInApp);
+  }
 
   // язык
   $("#langBtn")?.addEventListener("click", () => toggleLang());

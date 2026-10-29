@@ -337,58 +337,138 @@ ipcMain.on("desktop:ready-to-close", (event) => {
   win.close();
 });
 
-/* ------------------------ ссылки longcall://join?room= ------------------------ */
+/* ---------------------------- ссылки longcall:// ---------------------------- */
 
 /**
- * Достаёт 4-значный код комнаты из аргументов командной строки,
- * deep link вида longcall://join?room=1234 или из старого --room=1234.
- * @param {string[]} argv
+ * Достаёт 4-значный код комнаты из ссылки или аргумента.
+ *
+ * Поддерживаются все разумные формы, чтобы открывались и ссылки из старых
+ * сообщений:
+ *   longcall://join?room=1234
+ *   longcall://join/1234
+ *   longcall://room/1234
+ *   longcall://1234
+ * а также прежний аргумент --room=1234.
+ *
+ * @param {string} value
  * @returns {string|null}
  */
+function roomFromLink(value) {
+  if (typeof value !== "string") return null;
+  const arg = value.trim();
+  if (!arg) return null;
+
+  const legacy = /^--room=(\d{4})$/.exec(arg);
+  if (legacy) return legacy[1];
+
+  if (!arg.toLowerCase().startsWith(`${JOIN_SCHEME}://`)) return null;
+
+  // «двоеточие-слэш-слэш» ломает разбор через new URL для longcall://1234,
+  // поэтому хост и путь достаём вручную.
+  let rest = arg.slice(JOIN_SCHEME.length + 3);
+  rest = rest.replace(/^\/+/, "");
+  const [pathPart, queryPart = ""] = rest.split("?", 2);
+
+  const fromQuery = new URLSearchParams(queryPart).get("room");
+  if (fromQuery && /^\d{4}$/.test(fromQuery.trim())) return fromQuery.trim();
+
+  const digits = pathPart.match(/(\d{4})(?!\d)/);
+  if (digits) return digits[1];
+
+  return null;
+}
+
+/** Ищет ссылку на комнату в аргументах командной строки. */
 function roomFromArgv(argv = []) {
   for (const arg of argv) {
-    if (typeof arg !== "string") continue;
-    if (!arg.toLowerCase().startsWith(`${JOIN_SCHEME}://`)) {
-      const legacy = /^--room=(\d{4})$/.exec(arg);
-      if (legacy) return legacy[1];
-      continue;
-    }
-    try {
-      const url = new URL(arg);
-      const code = (url.searchParams.get("room") || "").trim();
-      if (/^\d{4}$/.test(code)) return code;
-    } catch {
-      // битая ссылка — просто игнорируем
-    }
+    const room = roomFromLink(arg);
+    if (room) return room;
   }
   return null;
+}
+
+/** Поднимает окно на передний план (в том числе из свёрнутого состояния). */
+function revealWindow(win) {
+  if (!win || win.isDestroyed()) return null;
+  if (win.isMinimized()) win.restore();
+  win.show();
+  win.focus();
+  return win;
 }
 
 /** Открывает комнату из ссылки и поднимает окно на передний план. */
 function focusFromLink(argv) {
   const room = roomFromArgv(argv);
-  if (room) return createCallWindow(room);
-  if (homeWindow) {
-    if (homeWindow.isMinimized()) homeWindow.restore();
-    homeWindow.show();
-    homeWindow.focus();
-    return homeWindow;
+  if (room) {
+    const win = createCallWindow(room);
+    // окно этой комнаты могло быть уже открыто — поднимаем его
+    return revealWindow(win);
   }
-  return createHomeWindow();
+  return revealWindow(homeWindow) || createHomeWindow();
 }
 
-/** Регистрирует схему longcall:// в системе. */
+/**
+ * Регистрирует схему longcall:// в системе.
+ *
+ * Windows/macOS: setAsDefaultProtocolClient (на Windows запись в реестр
+ * делает ещё и установщик NSIS, на portable-сборке помогает этот вызов).
+ * Linux: Electron этот вызов игнорирует, поэтому .desktop-файл и
+ * xdg-mime создаём сами — иначе AppImage не открывает ссылки.
+ */
 function registerProtocol() {
-  if (process.defaultApp) {
-    // запуск из исходников: electron . — нужен и путь к приложению
-    if (process.argv.length >= 2) {
-      app.setAsDefaultProtocolClient(JOIN_SCHEME, process.execPath, [
-        path.resolve(process.argv[1]),
-      ]);
+  try {
+    if (process.defaultApp) {
+      // запуск из исходников: electron . — нужен и путь к приложению
+      if (process.argv.length >= 2) {
+        app.setAsDefaultProtocolClient(JOIN_SCHEME, process.execPath, [
+          path.resolve(process.argv[1]),
+        ]);
+      }
+    } else {
+      app.setAsDefaultProtocolClient(JOIN_SCHEME);
     }
-    return;
+  } catch {
+    // регистрация не критична: приложение работает и без неё
   }
-  app.setAsDefaultProtocolClient(JOIN_SCHEME);
+
+  if (process.platform === "linux") registerLinuxProtocol();
+}
+
+/** Linux: свой .desktop с обработчиком схемы + xdg-mime default. */
+function registerLinuxProtocol() {
+  try {
+    const { execFile } = require("node:child_process");
+    const appsDir = path.join(app.getPath("home"), ".local", "share", "applications");
+    const desktopFile = path.join(appsDir, "longcall98.desktop");
+    const exec = process.defaultApp
+      ? `"${process.execPath}" "${path.resolve(process.argv[1] || ".")}" %u`
+      : `"${process.execPath}" %u`;
+
+    const body = [
+      "[Desktop Entry]",
+      "Type=Application",
+      "Name=LongCall 98",
+      "Comment=Аудиозвонки в стиле Windows 9x",
+      `Exec=${exec}`,
+      "Terminal=false",
+      "Categories=Network;AudioVideo;",
+      `MimeType=x-scheme-handler/${JOIN_SCHEME};`,
+      "",
+    ].join("\n");
+
+    fs.mkdirSync(appsDir, { recursive: true });
+    const current = fs.existsSync(desktopFile) ? fs.readFileSync(desktopFile, "utf8") : "";
+    if (current !== body) fs.writeFileSync(desktopFile, body, { mode: 0o644 });
+
+    execFile(
+      "xdg-mime",
+      ["default", "longcall98.desktop", `x-scheme-handler/${JOIN_SCHEME}`],
+      { timeout: 5000 },
+      () => {} // нет xdg-mime — молча живём дальше
+    );
+  } catch {
+    // нет прав на ~/.local/share/applications — не повод падать
+  }
 }
 
 /* ------------------------------ жизненный цикл ------------------------------ */
