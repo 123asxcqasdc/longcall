@@ -90,8 +90,12 @@ jobs:
 
       - uses: softprops/action-gh-release@v2
         with:
+          name: LongCall 98 — ${{ github.ref_name }}
+          # Заметки берём из файла: автогенерация дописывала новый блок
+          # «What's Changed» при каждом пересборке релиза.
+          body_path: RELEASE_NOTES.md
+          generate_release_notes: false
           files: |
             artifacts/**/*.AppImage
             artifacts/**/*.deb
             artifacts/**/*.exe
-          generate_release_notes: true

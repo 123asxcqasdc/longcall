@@ -16,6 +16,10 @@ const fsp = require("node:fs/promises");
 const ROOT = path.join(__dirname, "..");
 const SCHEME = "app";
 const APP_HOST = "longcall";
+
+// Схема для ссылок вида longcall://join?room=1234 — по ней система передаёт
+// комнату уже запущенному приложению (или запускает его).
+const JOIN_SCHEME = "longcall";
 const ENTRY = path.join(ROOT, "index.html");
 
 const HOME_SIZE = { width: 720, height: 720, minWidth: 460, minHeight: 420 };
@@ -56,6 +60,7 @@ protocol.registerSchemesAsPrivileged([
 
 /** @type {BrowserWindow | null} */
 let homeWindow = null;
+let pendingLink = null;
 /** @type {Map<string, BrowserWindow>} */
 const callWindows = new Map();
 const allowClose = new Set();
@@ -332,21 +337,75 @@ ipcMain.on("desktop:ready-to-close", (event) => {
   win.close();
 });
 
+/* ------------------------ ссылки longcall://join?room= ------------------------ */
+
+/**
+ * Достаёт 4-значный код комнаты из аргументов командной строки,
+ * deep link вида longcall://join?room=1234 или из старого --room=1234.
+ * @param {string[]} argv
+ * @returns {string|null}
+ */
+function roomFromArgv(argv = []) {
+  for (const arg of argv) {
+    if (typeof arg !== "string") continue;
+    if (!arg.toLowerCase().startsWith(`${JOIN_SCHEME}://`)) {
+      const legacy = /^--room=(\d{4})$/.exec(arg);
+      if (legacy) return legacy[1];
+      continue;
+    }
+    try {
+      const url = new URL(arg);
+      const code = (url.searchParams.get("room") || "").trim();
+      if (/^\d{4}$/.test(code)) return code;
+    } catch {
+      // битая ссылка — просто игнорируем
+    }
+  }
+  return null;
+}
+
+/** Открывает комнату из ссылки и поднимает окно на передний план. */
+function focusFromLink(argv) {
+  const room = roomFromArgv(argv);
+  if (room) return createCallWindow(room);
+  if (homeWindow) {
+    if (homeWindow.isMinimized()) homeWindow.restore();
+    homeWindow.show();
+    homeWindow.focus();
+    return homeWindow;
+  }
+  return createHomeWindow();
+}
+
+/** Регистрирует схему longcall:// в системе. */
+function registerProtocol() {
+  if (process.defaultApp) {
+    // запуск из исходников: electron . — нужен и путь к приложению
+    if (process.argv.length >= 2) {
+      app.setAsDefaultProtocolClient(JOIN_SCHEME, process.execPath, [
+        path.resolve(process.argv[1]),
+      ]);
+    }
+    return;
+  }
+  app.setAsDefaultProtocolClient(JOIN_SCHEME);
+}
+
 /* ------------------------------ жизненный цикл ------------------------------ */
 
 if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
   app.on("second-instance", (_event, argv) => {
-    const room = argv.map((a) => /^--room=(\d{4})$/.exec(a)).find(Boolean);
-    if (room) createCallWindow(room[1]);
-    if (homeWindow) {
-      if (homeWindow.isMinimized()) homeWindow.restore();
-      homeWindow.show();
-      homeWindow.focus();
-    } else {
-      createHomeWindow();
-    }
+    // Сюда приходит и повторный запуск, и клик по ссылке longcall://join?room=…
+    focusFromLink(argv);
+  });
+
+  // macOS присылает deep link событием, а не аргументом
+  app.on("open-url", (event, url) => {
+    event.preventDefault();
+    if (app.isReady()) focusFromLink([url]);
+    else pendingLink = url;
   });
 
   app.on("before-quit", () => {
@@ -388,9 +447,15 @@ if (!app.requestSingleInstanceLock()) {
       Menu.setApplicationMenu(null);
     }
 
-    const startRoom = process.argv.map((a) => /^--room=(\d{4})$/.exec(a)).find(Boolean);
+    registerProtocol();
+
     createHomeWindow();
-    if (startRoom) createCallWindow(startRoom[1]);
+
+    // Запуск по ссылке: longcall://join?room=1234 или --room=1234
+    const argv = pendingLink ? [...process.argv, pendingLink] : process.argv;
+    pendingLink = null;
+    const startRoom = roomFromArgv(argv);
+    if (startRoom) createCallWindow(startRoom);
 
     app.on("activate", () => {
       if (BrowserWindow.getAllWindows().length === 0) createHomeWindow();

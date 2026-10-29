@@ -88,7 +88,15 @@
     },
     "portable": {
       "artifactName": "longcall98-${version}-portable.${ext}"
-    }
+    },
+    "protocols": [
+      {
+        "name": "LongCall 98",
+        "schemes": [
+          "longcall"
+        ]
+      }
+    ]
   },
   "author": {
     "name": "Улитос Уткин",
