@@ -83,6 +83,8 @@ export class CallView {
     this.stopTimer();
     cancelAnimationFrame(this.raf);
     this.raf = 0;
+    this.progressDone = false;
+    clearTimeout(this.hideTimer);
     this.tilesEl.textContent = "";
     this.tiles.clear();
     this.participants = {};
@@ -105,6 +107,7 @@ export class CallView {
   }
 
   finishProgress() {
+    this.progressDone = true;
     this.setProgress({ text: t("call.progress.done"), indeterminate: false, value: 100 });
     clearTimeout(this.hideTimer);
     this.hideTimer = setTimeout(() => {
@@ -112,7 +115,17 @@ export class CallView {
     }, 900);
   }
 
-  showProgress(text) {
+  /**
+   * Показывает полосу загрузки.
+   *
+   * После finishProgress() поздние события прогресса (например, «все
+   * участники на связи», приходящее сразу после подключения) не должны
+   * возвращать полосу на экран — иначе она висит до конца звонка.
+   * Для нового участника полоса показывается заново: force = true.
+   */
+  showProgress(text, { force = false } = {}) {
+    if (this.progressDone && !force) return;
+    this.progressDone = false;
     clearTimeout(this.hideTimer);
     this.progressEl.classList.remove("hidden");
     this.setProgress({ text, indeterminate: true });

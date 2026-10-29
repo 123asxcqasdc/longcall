@@ -661,16 +661,28 @@ async function openCall(code) {
         sendDiagnostics({ auto: true });
       },
       onProgress: ({ key, params }) => {
-        if (key === "call.progress.peers" && !params?.total) return;
-        callView.showProgress(t(key, params));
-        if (key === "call.progress.peers" && params?.total > 0) {
+        // «Все на связи» приходит сразу после onPeerConnected, то есть уже
+        // после finishProgress. Если снова показать полосу, она останется
+        // висеть: новых событий прогресса по этой комнате больше не будет.
+        if (key === "call.progress.peers") {
+          const total = params?.total || 0;
+          const connected = params?.n || 0;
+          if (!total) return;
+          if (connected >= total) {
+            callView.finishProgress();
+            return;
+          }
+          // Новый участник ещё подключается — полосу показываем заново.
+          callView.showProgress(t(key, params), { force: true });
           callView.setProgress({
             key,
             params,
             indeterminate: false,
-            value: params.total ? 45 + Math.round((params.n / params.total) * 50) : 55,
+            value: 45 + Math.round((connected / total) * 50),
           });
+          return;
         }
+        callView.showProgress(t(key, params));
       },
       onParticipants: (participants) => {
         callView.renderParticipants(participants);
