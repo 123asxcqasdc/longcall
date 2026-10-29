@@ -1,3 +1,4 @@
+import { SITE_URL, APP_SCHEME } from "./config.js";
 import { t } from "./i18n.js";
 
 export class AppError extends Error {
@@ -100,12 +101,21 @@ export async function copyText(text) {
   }
 }
 
+/**
+ * Ссылка на комнату для отправки человеку.
+ * Всегда ведёт на сайт — и в браузере, и внутри настольного приложения.
+ */
 export function roomUrl(code) {
-  const url = new URL(location.href);
+  const url = new URL(SITE_URL);
   url.search = "";
   url.hash = "";
   url.searchParams.set("room", code);
   return url.toString();
+}
+
+/** Ссылка, которая открывает комнату в настольном приложении. */
+export function appRoomUrl(code) {
+  return `${APP_SCHEME}://join?room=${encodeURIComponent(code)}`;
 }
 
 export function debounce(fn, ms = 120) {

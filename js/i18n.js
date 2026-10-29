@@ -146,6 +146,8 @@ const DICT = {
 
     "modal.join.title": "Приглашение",
     "modal.join.text": "Вас пригласили в комнату {code}. Войти?",
+    "modal.join.app": "Открыть в приложении",
+    "modal.join.hint": "Если приложение LongCall 98 установлено, ссылка откроет его.",
 
     "modal.notfound.title": "Комната не найдена",
     "modal.notfound.text": "Комнаты {code} сейчас нет: возможно, в ней уже никого. Создать её заново?",
@@ -348,6 +350,8 @@ const DICT = {
 
     "modal.join.title": "Invitation",
     "modal.join.text": "You have been invited to room {code}. Join now?",
+    "modal.join.app": "Open in the app",
+    "modal.join.hint": "If LongCall 98 is installed, the link will open it.",
 
     "modal.notfound.title": "Room not found",
     "modal.notfound.text": "Room {code} does not exist right now — maybe it is empty. Create it again?",

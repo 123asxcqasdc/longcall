@@ -12,6 +12,16 @@ export const firebaseConfig = {
   measurementId: "G-QLF4VCK240",
 };
 
+// Публичный адрес приложения. Ссылки на комнаты всегда собираются от него,
+// даже когда страница открыта из настольного приложения по app://longcall —
+// иначе в буфер обмена попадал бы внутренний адрес Electron, бесполезный
+// для получателя.
+export const SITE_URL = "https://123asxcqasdc.github.io/longcall/";
+
+// Схема, по которой операционная система передаёт ссылку настольному
+// приложению: longcall://join?room=1234
+export const APP_SCHEME = "longcall";
+
 export const APP = {
   name: "LongCall 98",
   version: "1.0",

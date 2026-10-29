@@ -552,6 +552,7 @@ body.is-booting .desktop > .win:not(.splash) { visibility: hidden; }
 .modal .titlebar { cursor: default; }
 .modal-body { padding: 12px; overflow: auto; }
 .modal-body p + p { margin-top: 8px; }
+.modal-hint { color: #404040; font-size: 11px; }
 .modal-foot {
   display: flex;
   justify-content: flex-end;

@@ -21,6 +21,7 @@ import {
   errorText,
   copyText,
   roomUrl,
+  appRoomUrl,
   initials,
   sleep,
 } from "./util.js";
@@ -789,7 +790,12 @@ async function handleInvite(code) {
     openModal({
       title: t("modal.join.title"),
       icon: "i-phone",
-      body: el("p", { text: t("modal.join.text", { code }) }),
+      body: el("div", {}, [
+        el("p", { text: t("modal.join.text", { code }) }),
+        // В браузере предлагаем открыть приложение, если оно установлено.
+        // В обёртке ссылка уже открыта приложением — кнопка не нужна.
+        isDesktop ? null : el("p", { class: "modal-hint", text: t("modal.join.hint") }),
+      ]),
       buttons: [
         {
           label: t("home.join"),
@@ -798,6 +804,20 @@ async function handleInvite(code) {
             resolve(true);
           },
         },
+        ...(isDesktop
+          ? []
+          : [
+              {
+                // Система сама выберет приложение, зарегистрированное
+                // на схему longcall:// — если его нет, ничего не произойдёт.
+                label: t("modal.join.app"),
+                onClick: () => {
+                  answered = true;
+                  resolve(false);
+                  location.href = appRoomUrl(code);
+                },
+              },
+            ]),
         {
           label: t("common.cancel"),
           onClick: () => {
