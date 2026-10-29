@@ -243,6 +243,7 @@
         <button type="button" class="menu-btn" data-i18n="call.menu">Звонок</button>
         <div class="dropdown">
           <button type="button" data-action="copy-link"><span data-i18n="call.copyLink">Скопировать ссылку</span></button>
+          <button type="button" data-action="open-in-app" class="only-web"><span data-i18n="call.openApp">Открыть в приложении</span></button>
           <button type="button" data-action="settings"><span data-i18n="menu.file.settings">Настройки звука…</span></button>
           <div class="sep"></div>
           <button type="button" data-action="hangup"><span data-i18n="call.hangupMenu">Завершить звонок</span></button>
@@ -270,6 +271,10 @@
           <button type="button" class="btn btn-sm" id="btnCopyLink">
             <svg class="btn-ico"><use href="#i-copy"/></svg>
             <span data-i18n="call.copyLink">Ссылка</span>
+          </button>
+          <button type="button" class="btn btn-sm" id="btnOpenApp" hidden>
+            <svg class="btn-ico"><use href="#i-phone"/></svg>
+            <span data-i18n="call.openApp">В приложении</span>
           </button>
         </div>
       </div>
@@ -322,7 +327,7 @@
         <svg><use href="#i-phone"/></svg>
         <div>
           <b>LongCall 98</b>
-          <small>версия 1.0 · Windows 9x Edition</small>
+          <small>версия 1.0.1 · Windows 9x Edition</small>
         </div>
       </div>
       <div class="progress indeterminate"><div class="progress-fill"></div></div>
