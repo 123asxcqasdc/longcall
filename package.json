@@ -57,7 +57,8 @@
           "Comment": "Аудиозвонки в стиле Windows 9x",
           "Categories": "Network;AudioVideo;"
         }
-      }
+      },
+      "artifactName": "longcall98-${version}-${arch}.${ext}"
     },
     "win": {
       "target": [
@@ -71,9 +72,12 @@
       "perMachine": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
-      "shortcutName": "LongCall 98"
+      "shortcutName": "LongCall 98",
+      "artifactName": "longcall98-${version}-setup.${ext}"
     },
-    "artifactName": "longcall98-${version}-${arch}.${ext}"
+    "portable": {
+      "artifactName": "longcall98-${version}-portable.${ext}"
+    }
   },
   "author": {
     "name": "Улитос Уткин",
