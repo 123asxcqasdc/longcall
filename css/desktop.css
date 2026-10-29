@@ -96,13 +96,32 @@ html.is-desktop body.is-booting .desktop > .win:not(.splash) {
   visibility: hidden !important;
 }
 
-/* Заголовок — область перетаскивания настоящего окна */
+/* Заголовок — панель окна: заметная полоса с названием и кнопками */
 html.is-desktop .titlebar {
-  -webkit-app-region: drag;
+  flex: 0 0 auto;
+  min-height: 22px;
+  height: 22px;
+  padding-left: 4px;
+  font-size: 12px;
   cursor: default;
+  /* на Linux перетаскивание делаем сами через IPC (см. js/desktop.js),
+     потому что -webkit-app-region там часто не срабатывает */
+  -webkit-app-region: no-drag;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
-/* Всё интерактивное в заголовке — не drag */
+html.is-desktop:not(.desktop-linux) .titlebar { -webkit-app-region: drag; }
+
+html.is-desktop .titlebar-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  letter-spacing: 0.01em;
+}
+
 html.is-desktop .titlebar-btns,
 html.is-desktop .titlebar-btns *,
 html.is-desktop .menubar,
@@ -110,7 +129,16 @@ html.is-desktop .menubar * {
   -webkit-app-region: no-drag;
 }
 
-html.is-desktop .tb-btn { width: 18px; height: 15px; }
+/* Кнопки окна — крупнее, чтобы попадать мышью без прицеливания */
+html.is-desktop .tb-btn {
+  width: 20px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+html.is-desktop .titlebar-icon svg { width: 13px; height: 13px; }
 
 /* Развёрнуто: кнопка показывает «восстановить» — два наложенных окна */
 html.is-desktop .tb-max::before {

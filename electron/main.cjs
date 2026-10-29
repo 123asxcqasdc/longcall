@@ -8,7 +8,7 @@
 // app://longcall — так работают localStorage/IndexedDB, getUserMedia
 // и буфер обмена, чего не бывает на file://.
 
-const { app, BrowserWindow, Menu, ipcMain, protocol, session, shell } = require("electron");
+const { app, BrowserWindow, Menu, ipcMain, protocol, session, shell, screen } = require("electron");
 const path = require("node:path");
 const fs = require("node:fs");
 const fsp = require("node:fs/promises");
@@ -108,15 +108,100 @@ function windowsByKey() {
   return map;
 }
 
+/** Рабочая область основного монитора (или его размеры, если области нет). */
+function primaryArea() {
+  try {
+    const display = screen.getPrimaryDisplay();
+    return display.workArea || display.bounds;
+  } catch {
+    return { x: 0, y: 0, width: 1024, height: 768 };
+  }
+}
+
+/**
+ * Видна ли шапка окна на каком-нибудь мониторе.
+ *
+ * Частая причина «пропавшей» панели окна на Linux: сохранённая позиция
+ * осталась от другого монитора, от тайлового оконного менеджера или от
+ * сессии Wayland, и окно открывается выше/левее экрана — контент виден,
+ * а заголовок с кнопками обрезан, и сдвинуть окно нечем.
+ */
+function isTitleVisible(bounds) {
+  const TITLE = 28; // высота шапки окна в приложении
+  let displays = [];
+  try {
+    displays = screen.getAllDisplays();
+  } catch {
+    return true;
+  }
+  if (!displays.length) return true;
+
+  return displays.some((display) => {
+    const area = display.workArea || display.bounds;
+    const overlapX =
+      Math.min(bounds.x + bounds.width, area.x + area.width) - Math.max(bounds.x, area.x);
+    const overlapY =
+      Math.min(bounds.y + bounds.height, area.y + area.height) - Math.max(bounds.y, area.y);
+    // шапка целиком в пределах рабочей области и окно заметно видно
+    return (
+      overlapX >= 120 &&
+      overlapY >= TITLE &&
+      bounds.y >= area.y - 2 &&
+      bounds.y + TITLE <= area.y + area.height
+    );
+  });
+}
+
+/**
+ * Возвращает пригодные границы окна: сохранённые, если они на экране,
+ * иначе — по центру основного монитора. Размер всегда влезает в экран.
+ */
 function safeBounds(key, fallback) {
+  const area = primaryArea();
   const saved = windowState[key];
-  if (!saved || typeof saved.width !== "number" || typeof saved.height !== "number") return null;
-  const ok =
-    Number.isFinite(saved.x) &&
-    Number.isFinite(saved.y) &&
-    saved.width >= fallback.minWidth &&
-    saved.height >= fallback.minHeight;
-  return ok ? saved : null;
+  const fits = (value) =>
+    value &&
+    Number.isFinite(value.x) &&
+    Number.isFinite(value.y) &&
+    typeof value.width === "number" &&
+    typeof value.height === "number" &&
+    value.width >= fallback.minWidth &&
+    value.height >= fallback.minHeight;
+
+  if (fits(saved) && isTitleVisible(saved)) {
+    // даже «видимое» окно не должно вылезать за край экрана
+    return {
+      x: Math.round(Math.min(Math.max(saved.x, area.x), area.x + area.width - 160)),
+      y: Math.round(Math.min(Math.max(saved.y, area.y), area.y + area.height - 60)),
+      width: Math.min(saved.width, area.width),
+      height: Math.min(saved.height, area.height),
+    };
+  }
+
+  // Позиции нет или она вне экрана — ставим по центру, чуть выше середины,
+  // чтобы шапка точно была видна.
+  const width = Math.min(fallback.width, area.width);
+  const height = Math.min(fallback.height, area.height);
+  return {
+    x: Math.round(area.x + (area.width - width) / 2),
+    y: Math.round(area.y + Math.max(0, (area.height - height) / 2 - 20)),
+    width,
+    height,
+  };
+}
+
+/** Показ окна с подстраховкой: ready-to-show может не сработать. */
+function showWhenReady(win) {
+  let shown = false;
+  const show = () => {
+    if (shown || win.isDestroyed()) return;
+    shown = true;
+    win.show();
+  };
+  win.once("ready-to-show", show);
+  // на всякий случай: если событие не пришло, окно всё равно показываем
+  setTimeout(show, 4000);
+  return win;
 }
 
 /* ------------------------------- протокол ------------------------------- */
@@ -227,8 +312,9 @@ function createHomeWindow() {
 
   win.on("resize", scheduleStateSave);
   win.on("move", scheduleStateSave);
-  win.once("ready-to-show", () => win.show());
+  showWhenReady(win);
   win.on("closed", () => {
+    stopDrag();
     homeWindow = null;
     scheduleStateSave();
   });
@@ -279,8 +365,9 @@ function createCallWindow(code, { nick } = {}) {
 
   win.on("resize", scheduleStateSave);
   win.on("move", scheduleStateSave);
-  win.once("ready-to-show", () => win.show());
+  showWhenReady(win);
   win.on("closed", () => {
+    stopDrag();
     callWindows.delete(room);
     allowClose.delete(win.id);
     scheduleStateSave();
@@ -315,6 +402,58 @@ ipcMain.handle("desktop:window-action", (event, action) => {
     default:
       return false;
   }
+});
+
+/* ----------------------------- перетаскивание окна ----------------------------- */
+
+// На Linux (особенно Wayland/XWayland) CSS -webkit-app-region: drag часто не
+// работает, и окно нечем сдвинуть. Поэтому шапка дополнительно тянет окно
+// вручную: рендерер сообщает о начале и конце перетаскивания, а позицию
+// окна пересчитываем по положению курсора.
+let dragState = null;
+
+function stopDrag() {
+  if (!dragState) return;
+  clearInterval(dragState.timer);
+  dragState = null;
+}
+
+ipcMain.on("desktop:drag-start", (event) => {
+  const win = windowFromEvent(event);
+  if (!win || win.isDestroyed()) return;
+  stopDrag();
+
+  let cursor;
+  try {
+    cursor = screen.getCursorScreenPoint();
+  } catch {
+    return;
+  }
+  const [wx, wy] = win.getPosition();
+  const offsetX = cursor.x - wx;
+  const offsetY = cursor.y - wy;
+
+  const timer = setInterval(() => {
+    if (!dragState || win.isDestroyed()) {
+      stopDrag();
+      return;
+    }
+    try {
+      if (win.isMaximized()) return;
+      const point = screen.getCursorScreenPoint();
+      win.setPosition(Math.round(point.x - offsetX), Math.round(point.y - offsetY));
+    } catch {
+      stopDrag();
+    }
+  }, 16);
+
+  dragState = { win, timer };
+  event.returnValue = true;
+});
+
+ipcMain.on("desktop:drag-end", () => {
+  stopDrag();
+  scheduleStateSave();
 });
 
 ipcMain.handle("desktop:is-maximized", (event) => {

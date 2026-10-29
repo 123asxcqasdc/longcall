@@ -150,6 +150,8 @@ const DICT = {
     "modal.join.title": "Приглашение",
     "modal.join.text": "Вас пригласили в комнату {code}. Войти?",
     "modal.join.app": "Открыть в приложении",
+    "err.iceTitle": "Не удалось соединиться",
+    "err.iceText": "Прямой канал не установился, а ретранслятор (TURN) недоступен. Обычно это значит, что сеть блокирует UDP или TURN-сервер не отвечает. Попробуйте другую сеть или мобильный интернет.",
     "modal.join.hint": "Если приложение LongCall 98 установлено, ссылка откроет его.",
 
     "modal.notfound.title": "Комната не найдена",
@@ -357,6 +359,8 @@ const DICT = {
     "modal.join.title": "Invitation",
     "modal.join.text": "You have been invited to room {code}. Join now?",
     "modal.join.app": "Open in the app",
+    "err.iceTitle": "Could not connect",
+    "err.iceText": "The direct channel failed and the TURN relay is unreachable. This usually means the network blocks UDP or the TURN server does not respond. Try another network or mobile data.",
     "modal.join.hint": "If LongCall 98 is installed, the link will open it.",
 
     "modal.notfound.title": "Room not found",

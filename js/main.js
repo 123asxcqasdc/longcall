@@ -619,6 +619,18 @@ async function openCall(code) {
     audio: audioEngine,
     handlers: {
       onLog: (text, tone) => callView.log(text, tone),
+      // Прямой канал не установился и relay-кандидатов нет: почти наверняка
+      // TURN недоступен или сеть блокирует UDP. Объясняем это человеку.
+      onIceProblem: ({ peer } = {}) => {
+        if (state.session?.iceHintShown) return;
+        if (state.session) state.session.iceHintShown = true;
+        toast({
+          title: t("err.iceTitle"),
+          text: t("err.iceText", { peer: peer || "" }),
+          icon: "i-warn",
+          tone: "error",
+        });
+      },
       onProgress: ({ key, params }) => {
         if (key === "call.progress.peers" && !params?.total) return;
         callView.showProgress(t(key, params));
