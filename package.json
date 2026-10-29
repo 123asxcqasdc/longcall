@@ -47,7 +47,17 @@
       "category": "Network",
       "icon": "electron/icons",
       "description": "Аудиозвонки в стиле Windows 9x",
-      "synopsis": "LongCall 98 — звонки в стиле Windows 9x"
+      "synopsis": "LongCall 98 — звонки в стиле Windows 9x",
+      "maintainer": "Улитос Уткин <ulitka431@gmail.com>",
+      "vendor": "LongCall",
+      "executableName": "longcall98",
+      "desktop": {
+        "entry": {
+          "Name": "LongCall 98",
+          "Comment": "Аудиозвонки в стиле Windows 9x",
+          "Categories": "Network;AudioVideo;"
+        }
+      }
     },
     "win": {
       "target": [
@@ -62,6 +72,13 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "shortcutName": "LongCall 98"
-    }
-  }
+    },
+    "artifactName": "longcall98-${version}-${arch}.${ext}"
+  },
+  "author": {
+    "name": "Улитос Уткин",
+    "email": "ulitka431@gmail.com"
+  },
+  "homepage": "https://123asxcqasdc.github.io/longcall/",
+  "license": "MIT"
 }

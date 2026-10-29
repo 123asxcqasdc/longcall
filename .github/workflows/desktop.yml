@@ -46,6 +46,9 @@ jobs:
         run: |
           for file in js/*.js electron/*.cjs; do node --check "$file"; done
           test -s vendor/firebase.js
+          test -s electron/icons/512x512.png
+          # .deb/.rpm требуют e-mail мейнтейнера, иначе electron-builder падает
+          node -e "const p=require('./package.json'); if(!p.author||!p.author.email) throw new Error('package.json: author.email обязателен'); if(!p.build.linux.maintainer) throw new Error('package.json: build.linux.maintainer обязателен');"
           echo "sources ok"
 
       - name: Package
