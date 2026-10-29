@@ -49,12 +49,52 @@ html.is-desktop .win {
 
 html.is-desktop .win.hidden { display: none !important; }
 
-/* Сплэш не нужен: окно и так открывается мгновенно */
-html.is-desktop .win.splash { display: none !important; }
+/* Сплэш загрузки занимает всё окно: вместо «мгновенного» главного экрана
+   пользователь видит тот самый экран запуска с прогресс-баром */
+html.is-desktop .win.splash {
+  border: 0;
+  box-shadow: none;
+  z-index: 40;
+  /* в браузере сплэш по центру (left/top: 50% + translate), здесь — на всё окно */
+  transform: none !important;
+}
 
-/* Пока идёт загрузка, окно всё равно должно быть видно
-   (в браузере его прикрывает сплэш) */
-html.is-desktop body.is-booting .desktop > .win:not(.splash) { visibility: visible; }
+html.is-desktop .win.splash .titlebar { -webkit-app-region: drag; }
+
+html.is-desktop .win.splash .splash-body {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  height: calc(100% - 22px);
+  padding: 24px 32px 40px;
+}
+
+html.is-desktop .win.splash .splash-logo { margin-bottom: 20px; }
+html.is-desktop .win.splash .splash-logo b { font-size: 19px; }
+html.is-desktop .win.splash .splash-logo small { font-size: 12px; }
+html.is-desktop .win.splash .progress { height: 20px; margin: 0 0 10px; }
+html.is-desktop .win.splash .progress-text { font-size: 12px; }
+
+html.is-desktop .win.splash .splash-foot {
+  position: absolute;
+  left: 32px;
+  right: 32px;
+  bottom: 20px;
+  text-align: center;
+}
+
+html.is-desktop .win.splash.done {
+  opacity: 0;
+  transform: none !important;
+  transition: opacity 0.28s ease;
+  pointer-events: none;
+}
+
+/* Пока идёт загрузка, рабочие окна скрыты — виден только сплэш */
+html.is-desktop body.is-booting .desktop > .win:not(.splash) {
+  visibility: hidden !important;
+}
 
 /* Заголовок — область перетаскивания настоящего окна */
 html.is-desktop .titlebar {

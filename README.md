@@ -39,6 +39,7 @@ https://123asxcqasdc.github.io/longcall/
 | Окно звонка | отдельный `BrowserWindow` на комнату, сразу подключается к ней; размеры свои |
 | Кнопки `_ □ ×` | реальные `minimize` / `maximize` / `close` через IPC |
 | Рамка | `frame: false`; перетаскивание — CSS `-webkit-app-region: drag` |
+| Экран запуска | тот же, что в браузере: окно «LongCall 98» с прогресс-баром на всё окно; главный экран появляется только после подключения аккаунта |
 | Закрытие окна звонка | приложение сначала выходит из комнаты (`onDisconnect` успевает сработать), потом окно закрывается |
 | Микрофон | разрешение `media` выдаётся только на `audio`, видео запрещено |
 | Хранение | `localStorage`/cookie работают, потому что страницы отдаются по защищённой схеме `app://longcall`, а не `file://` |
@@ -57,8 +58,21 @@ npm start        # или npm run dev — с логами
 
 ```bash
 npm run dist:linux   # AppImage + .deb  → release/
-npm run dist:win     # NSIS-установщик + portable .exe → release/
+npm run dist:win     # установщик (setup.exe) + portable.exe → release/
 ```
+
+Установщик Windows — классический мастер в стиле Windows 98: боковая панель 164×314
+с пиксельной иконкой, шапка страниц 150×57, системный серый фон и тексты вроде
+«Добро пожаловать в мастер установки LongCall 98». Картинки генерирует
+`tools/make-icons.py`, разметка мастера — `electron/installer.nsh`
+(подключается через `build.nsis.include`).
+
+| Файл | Что это |
+| --- | --- |
+| `longcall98-1.0.0-setup.exe` | мастер установки (NSIS, `oneClick: false`) |
+| `longcall98-1.0.0-portable.exe` | запуск без установки |
+| `longcall98-1.0.0-x86_64.AppImage` | Linux, без установки |
+| `longcall98-1.0.0-amd64.deb` | Linux, Debian/Ubuntu |
 
 Workflow [`.github/workflows/desktop.yml`](.github/workflows/desktop.yml) собирает оба
 варианта на GitHub-раннерах и прикрепляет файлы к релизу при пуше тега `v*`:
