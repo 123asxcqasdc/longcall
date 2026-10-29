@@ -67,6 +67,13 @@ Workflow [`.github/workflows/desktop.yml`](.github/workflows/desktop.yml) соб
 git tag v1.0.0 && git push origin v1.0.0
 ```
 
+Иконки пересобираются скриптом `tools/make-icons.py` (нужен Pillow, только для разработки):
+
+```bash
+python3 -m venv .venv && .venv/bin/pip install pillow
+.venv/bin/python tools/make-icons.py
+```
+
 Windows-сборка не подписана — SmartScreen может показать предупреждение.
 Кросс-компиляция делается на соответствующей ОС: на Linux собирается Linux, на Windows — Windows.
 
@@ -75,7 +82,7 @@ Windows-сборка не подписана — SmartScreen может пока
 ```
 electron/main.cjs      главный процесс: окна, протокол app://, IPC, разрешения
 electron/preload.cjs   мост contextBridge → window.longcallDesktop
-electron/icons/        иконки (png для окна, ico для Windows)
+electron/icons/        иконки: icon.png для окна, icon.ico для Windows, 16x16…512x512 для deb/AppImage
 js/desktop.js          обёртка над мостом + no-op для браузера
 css/desktop.css        режим обёртки: без рабочего стола, окно на весь BrowserWindow
 ```
