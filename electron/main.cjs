@@ -8,7 +8,7 @@
 // app://longcall — так работают localStorage/IndexedDB, getUserMedia
 // и буфер обмена, чего не бывает на file://.
 
-const { app, BrowserWindow, Menu, ipcMain, protocol, session, shell, screen } = require("electron");
+const { app, BrowserWindow, dialog, Menu, ipcMain, protocol, session, shell, screen } = require("electron");
 const path = require("node:path");
 const fs = require("node:fs");
 const fsp = require("node:fs/promises");
@@ -467,6 +467,39 @@ ipcMain.handle("desktop:open-call", (event, payload = {}) => {
   win.show();
   win.focus();
   return { ok: true, code: String(payload.code) };
+});
+
+// Сохранение файла из звонка: системный диалог «Сохранить как» вместо
+// молчаливого складывания в «Загрузки». Данные приходят из страницы уже
+// собранным Blob-ом (файл лежит в Firebase частями).
+ipcMain.handle("desktop:save-file", async (event, payload = {}) => {
+  const win = windowFromEvent(event) || BrowserWindow.getFocusedWindow() || null;
+  const raw = String(payload.name || "file").replace(/[\\/:*?"<>|]+/g, "_").slice(0, 96);
+  const name = raw || "file";
+  let target = null;
+  try {
+    const result = await dialog.showSaveDialog(win, {
+      title: name,
+      defaultPath: path.join(app.getPath("downloads"), name),
+      buttonLabel: "Сохранить",
+    });
+    if (result.canceled || !result.filePath) return { ok: false, canceled: true };
+    target = result.filePath;
+  } catch (err) {
+    return { ok: false, error: err?.message || String(err) };
+  }
+  try {
+    // Через IPC приходит ArrayBuffer (structured clone) или Uint8Array.
+    const data = payload.data;
+    let buffer;
+    if (data instanceof ArrayBuffer) buffer = Buffer.from(new Uint8Array(data));
+    else if (ArrayBuffer.isView(data)) buffer = Buffer.from(data.buffer, data.byteOffset, data.byteLength);
+    else buffer = Buffer.from(String(data || ""), "utf8");
+    await fsp.writeFile(target, buffer);
+    return { ok: true, path: target };
+  } catch (err) {
+    return { ok: false, error: err?.message || String(err) };
+  }
 });
 
 ipcMain.on("desktop:ready-to-close", (event) => {

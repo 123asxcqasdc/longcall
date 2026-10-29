@@ -13,6 +13,7 @@ import { audioEngine } from "./audio.js";
 import { CallSession } from "./call.js";
 import { resolveIceServers, resetIceCache } from "./turn.js";
 import { CallDiagnostics } from "./diagnostics.js";
+import { RoomFiles, formatSize } from "./files.js";
 import { CallView } from "./callui.js";
 import {
   $,
@@ -74,6 +75,9 @@ const state = {
   settingsApi: null,
   meterRaf: 0,
   booted: false,
+  // передача файлов в текущем звонке
+  files: null,
+  filesList: [],
 };
 
 const callView = new CallView();
@@ -81,6 +85,8 @@ let wm = null;
 // true, когда окно закрывает система (кнопка ×, Alt+F4, выход из приложения)
 let systemClosing = false;
 const inCallWindow = () => isDesktop && desktopView === "call";
+// Открытое окно «Файлы звонка»: { rerender, refreshLabels } или null.
+let filesUi = null;
 // Последний отправленный диагностический отчёт: { id, path, ok }
 let lastReport = null;
 
@@ -727,6 +733,28 @@ async function openCall(code) {
 
   state.session = session;
 
+  // Файлы живут в той же комнате: watch() подписывается на rooms/{code}/files.
+  const files = new RoomFiles({
+    code,
+    me: { uid: state.uid, nick: state.nick },
+    diagnostics,
+    onList: (list) => handleFilesList(list),
+    onNew: (entry) => {
+      callView.log(t("files.log.incoming", { nick: entry.nick || "…", name: entry.name }), "ok");
+      toast({
+        title: t("files.incoming", { nick: entry.nick || "…" }),
+        text: `${entry.name} · ${formatSize(entry.size)}`,
+        icon: "i-folder",
+      });
+      audioEngine.playSound("message").catch(() => {});
+    },
+    onError: () => callView.log(t("files.err.watch"), "warn"),
+  });
+  state.files = files;
+  state.filesList = [];
+  updateFilesBadge();
+  files.watch();
+
   try {
     await session.join();
     callView.startTimer();
@@ -811,6 +839,12 @@ function updateCallWindowTitle() {
 async function hangup({ silent = false } = {}) {
   const session = state.session;
   state.session = null;
+  // Подписку на файлы снимаем сразу: комната сейчас закроется.
+  state.files?.stop();
+  state.files = null;
+  state.filesList = [];
+  filesUi = null;
+  updateFilesBadge();
   state.activeCode = "";
   callView.stop();
   wm?.close("call");
@@ -1258,6 +1292,232 @@ function openParticipants() {
   });
 }
 
+/* ============================ файлы в звонке ============================ */
+
+function updateFilesBadge() {
+  const badge = $("#filesBadge");
+  const count = (state.filesList || []).length;
+  if (badge) {
+    badge.textContent = String(count);
+    badge.classList.toggle("hidden", count === 0);
+  }
+  const btn = $("#btnFiles");
+  if (btn) {
+    btn.title = count
+      ? t("files.count", { n: count, max: APP.files.maxFiles })
+      : t("files.title");
+    btn.classList.toggle("has-files", count > 0);
+  }
+}
+
+function handleFilesList(list) {
+  state.filesList = Array.isArray(list) ? list : [];
+  updateFilesBadge();
+  filesUi?.rerender();
+}
+
+function fileTime(at) {
+  if (!at) return "";
+  return new Date(at).toLocaleTimeString(getLang() === "ru" ? "ru-RU" : "en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+/** Строка списка файлов: имя, размер, отправитель, «Скачать» и «Удалить». */
+function fileRow(entry) {
+  const row = el("div", { class: "file-row" });
+
+  const ico = el("span", { class: "file-ico" });
+  ico.append(svgUse("i-notepad"));
+  row.append(ico);
+
+  const info = el("div", { class: "file-info grow" });
+  info.append(el("div", { class: "file-name", text: entry.name, title: entry.name }));
+  const meta = [formatSize(entry.size), entry.nick || "…", fileTime(entry.at)]
+    .filter(Boolean)
+    .join(" · ");
+  info.append(el("div", { class: "small-dim", text: meta }));
+  row.append(info);
+
+  const actions = el("div", { class: "file-actions" });
+
+  const save = el("button", { type: "button", class: "btn btn-sm", text: t("files.download") });
+  save.addEventListener("click", async () => {
+    if (!state.files) return;
+    save.disabled = true;
+    try {
+      const name = await state.files.download(entry);
+      // null — человек закрыл диалог сохранения, молчим.
+      if (name) toast({ title: t("files.downloaded", { name }), icon: "i-folder", timeout: 2600 });
+    } catch (err) {
+      toast({ title: t("err.title"), text: errorText(err), icon: "i-warn", tone: "error" });
+    } finally {
+      save.disabled = false;
+    }
+  });
+  actions.append(save);
+
+  // Удалять можно только свои файлы: чужие — собственность отправителя.
+  if (entry.from === state.uid) {
+    const del = el("button", { type: "button", class: "btn btn-sm", text: t("files.remove") });
+    del.addEventListener("click", async () => {
+      if (!state.files) return;
+      const ok = await confirmModal({
+        title: t("files.remove"),
+        text: t("files.removeAsk", { name: entry.name }),
+        okLabel: t("files.remove"),
+        cancelLabel: t("common.cancel"),
+      });
+      if (!ok) return;
+      try {
+        await state.files.removeFile(entry);
+        callView.log(t("files.log.removed", { name: entry.name }), "warn");
+        toast({ title: t("files.removed"), text: entry.name, icon: "i-folder", timeout: 2400 });
+      } catch (err) {
+        toast({ title: t("err.title"), text: errorText(err), icon: "i-warn", tone: "error" });
+      }
+    });
+    actions.append(del);
+  }
+
+  row.append(actions);
+  return row;
+}
+
+/** Окно «Файлы звонка»: список, отправка с прогрессом и отменой. */
+function openFiles() {
+  const files = state.files;
+  if (!files) {
+    toast({ title: t("err.room"), icon: "i-warn", tone: "error" });
+    return;
+  }
+  if (filesUi) return;
+
+  const hint = el("p", {
+    class: "small-dim",
+    text: t("files.hint", {
+      max: formatSize(APP.files.maxBytes),
+      count: APP.files.maxFiles,
+    }),
+  });
+  const listEl = el("div", { class: "file-list" });
+
+  // Прогресс текущей отправки.
+  const bar = el("div", { class: "progress determinate" });
+  const fill = el("div", { class: "progress-fill" });
+  bar.append(fill);
+  const statusText = el("span", { class: "progress-text" });
+  const cancelBtn = el("button", { type: "button", class: "btn btn-sm", text: t("files.cancel") });
+  const uploadBox = el("div", { class: "file-upload hidden" }, [
+    bar,
+    el("div", { class: "file-upload-row" }, [statusText, cancelBtn]),
+  ]);
+
+  const input = el("input", { type: "file", class: "file-input" });
+  input.addEventListener("change", () => {
+    const file = input.files && input.files[0];
+    input.value = "";
+    if (file) startUpload(file);
+  });
+
+  const wrap = el("div", { class: "files-panel" }, [hint, uploadBox, listEl, input]);
+
+  const rerender = () => {
+    listEl.textContent = "";
+    const list = state.filesList || [];
+    if (!list.length) {
+      listEl.append(el("p", { class: "small-dim files-empty", text: t("files.empty") }));
+      return;
+    }
+    for (const entry of list) listEl.append(fileRow(entry));
+  };
+  rerender();
+
+  const setUploading = (visible, text = "") => {
+    uploadBox.classList.toggle("hidden", !visible);
+    if (text) statusText.textContent = text;
+  };
+
+  const startUpload = async (file) => {
+    const problem = files.canSend(file);
+    if (problem) {
+      toast({ title: t("err.title"), text: errorText(problem), icon: "i-warn", tone: "error" });
+      return;
+    }
+    fill.style.setProperty("--p", "0%");
+    setUploading(true, t("files.uploading", { name: file.name }));
+    cancelBtn.disabled = false;
+    cancelBtn.onclick = () => {
+      cancelBtn.disabled = true;
+      files.cancel();
+    };
+
+    try {
+      const sent = await files.send(file, {
+        onProgress: ({ sent, total }) => {
+          const percent = total ? Math.min(100, Math.round((sent / total) * 100)) : 0;
+          fill.style.setProperty("--p", `${percent}%`);
+          statusText.textContent = t("files.uploadingProgress", { name: file.name, p: percent });
+        },
+      });
+      callView.log(t("files.log.sent", { name: sent.name }), "ok");
+      toast({
+        title: t("files.sent"),
+        text: `${sent.name} · ${formatSize(sent.size)}`,
+        icon: "i-folder",
+      });
+    } catch (err) {
+      if (err?.code === "fileCancelled") {
+        toast({ title: t("files.cancelled"), icon: "i-warn", timeout: 2200 });
+      } else {
+        toast({ title: t("err.title"), text: errorText(err), icon: "i-warn", tone: "error" });
+      }
+    } finally {
+      cancelBtn.onclick = null;
+      setUploading(false);
+    }
+  };
+
+  const api = openModal({
+    title: t("files.title"),
+    icon: "i-folder",
+    body: wrap,
+    width: "450px",
+    buttons: [
+      {
+        label: t("files.send"),
+        busy: false,
+        onClick: () => {
+          if (files.busy) {
+            toast({ title: t("files.busy"), icon: "i-warn", tone: "error" });
+            return false;
+          }
+          input.click();
+          return false;
+        },
+      },
+      { label: t("files.close"), onClick: () => {} },
+    ],
+    onClose: () => {
+      filesUi = null;
+    },
+  });
+
+  filesUi = {
+    rerender,
+    refreshLabels() {
+      api.setTitle(t("files.title"));
+      hint.textContent = t("files.hint", {
+        max: formatSize(APP.files.maxBytes),
+        count: APP.files.maxFiles,
+      });
+      cancelBtn.textContent = t("files.cancel");
+      rerender();
+    },
+  };
+}
+
 function openAbout() {
   const wrap = document.createElement("div");
   wrap.append(el("p", { text: t("modal.about.p1") }));
@@ -1356,6 +1616,9 @@ async function handleAction(action) {
       break;
     case "send-report":
       sendDiagnostics({ auto: false });
+      break;
+    case "files":
+      openFiles();
       break;
     case "hangup":
       if (state.session) hangup();
@@ -1503,6 +1766,7 @@ function setupChrome() {
   // окно звонка
   $("#btnMic")?.addEventListener("click", toggleMic);
   $("#btnParticipants")?.addEventListener("click", openParticipants);
+  $("#btnFiles")?.addEventListener("click", openFiles);
   $("#btnCallSettings")?.addEventListener("click", openSettings);
   $("#btnHangup")?.addEventListener("click", () => hangup());
   $("#btnCopyLink")?.addEventListener("click", copyRoomLink);
@@ -1565,6 +1829,8 @@ function setupChrome() {
     document.title = state.activeCode ? t("call.title", { code: state.activeCode }) : t("app.name");
     if (state.activeCode) updateCallWindowTitle();
     callView.refreshLabels();
+    updateFilesBadge();
+    filesUi?.refreshLabels();
     renderProfile();
     updateHomeStatus();
     updateMicCell();
