@@ -16,7 +16,7 @@ export const firebaseConfig = {
 // даже когда страница открыта из настольного приложения по app://longcall —
 // иначе в буфер обмена попадал бы внутренний адрес Electron, бесполезный
 // для получателя.
-export const SITE_URL = "https://123asxcqasdc.github.io/longcall/";
+export const SITE_URL = "https://longcall.c6t.ru/";
 
 // Схема, по которой операционная система передаёт ссылку настольному
 // приложению: longcall://join?room=1234

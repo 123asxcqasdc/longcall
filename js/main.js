@@ -1532,7 +1532,7 @@ function openAbout() {
   wrap.append(
     el("p", {
       class: "small-dim",
-      text: `${t("call.githubPages")} · ${location.host || "localhost"}`,
+      text: `${t("call.webHost")} · ${location.host || "localhost"}`,
     })
   );
   openModal({
