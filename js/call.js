@@ -10,7 +10,7 @@ import {
   onDisconnect,
 } from "../vendor/firebase.js";
 import { db } from "./firebase.js";
-import { APP, ICE_SERVERS } from "./config.js";
+import { APP, ICE_SERVERS, ICE_RESTART_LIMIT } from "./config.js";
 import { AppError } from "./util.js";
 
 /**
@@ -260,7 +260,11 @@ export class CallSession {
 
     const pc = new RTCPeerConnection({
       iceServers: ICE_SERVERS,
-      iceCandidatePoolSize: 2,
+      // все типы кандидатов: host, srflx (STUN) и relay (TURN).
+      // Прямой канал пробуем первым, ретранслятор — как запасной путь.
+      iceTransportPolicy: "all",
+      iceCandidatePoolSize: 0,
+      bundlePolicy: "max-bundle",
     });
 
     const peer = {
@@ -273,6 +277,8 @@ export class CallSession {
       ignoreOffer: false,
       isSettingRemoteAnswerPending: false,
       restartTimer: null,
+      iceCounts: { host: 0, srflx: 0, prflx: 0, relay: 0 },
+      iceReported: false,
       restartCount: 0,
       pendingCandidates: [],
       state: "new",
@@ -299,10 +305,19 @@ export class CallSession {
 
     pc.addEventListener("icecandidate", (event) => {
       if (!event.candidate || this.closed) return;
+      // Считаем типы кандидатов: relay означает, что TURN доступен и
+      // звонок пройдёт даже через строгий NAT.
+      const type = event.candidate.type || "host";
+      peer.iceCounts[type] = (peer.iceCounts[type] || 0) + 1;
       this.sendSignal(uid, {
         type: "ice",
         candidate: event.candidate.toJSON(),
       }).catch(() => {});
+    });
+
+    pc.addEventListener("icegatheringstatechange", () => {
+      if (pc.iceGatheringState !== "complete" || this.closed) return;
+      this.reportIce(peer);
     });
 
     pc.addEventListener("negotiationneeded", () => {
@@ -326,6 +341,25 @@ export class CallSession {
       this.negotiate(peer).catch(() => {});
     }
     return peer;
+  }
+
+  /**
+   * Пишет в журнал звонка, какие кандидаты удалось собрать.
+   * Если relay = 0, значит TURN недоступен и звонок держится только на
+   * прямом канале — при строгом NAT он не установится.
+   */
+  reportIce(peer, { failed = false } = {}) {
+    if (peer.iceReported && !failed) return;
+    peer.iceReported = true;
+    const c = peer.iceCounts;
+    const summary = `host ${c.host || 0} · srflx ${c.srflx || 0} · relay ${c.relay || 0}`;
+    const noRelay = !c.relay;
+    this.log(`ICE ${peer.nick}: ${summary}`, noRelay ? "warn" : "");
+
+    if (failed && noRelay) {
+      this.log("no relay candidates: TURN is unavailable", "err");
+      this.h.onIceProblem?.({ peer: peer.nick, counts: { ...c } });
+    }
   }
 
   peerInfo(peer) {
@@ -359,6 +393,7 @@ export class CallSession {
     }
     if (state === "failed") {
       this.log(`connection failed: ${peer.nick}`, "err");
+      this.reportIce(peer, { failed: true });
       this.scheduleRestart(peer);
     }
     if (state === "disconnected") {
@@ -377,7 +412,7 @@ export class CallSession {
   }
 
   scheduleRestart(peer) {
-    if (peer.restartCount >= 4 || this.closed) return;
+    if (peer.restartCount >= ICE_RESTART_LIMIT || this.closed) return;
     clearTimeout(peer.restartTimer);
     peer.restartTimer = setTimeout(() => {
       if (this.closed) return;

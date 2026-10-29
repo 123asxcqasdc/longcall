@@ -21,6 +21,12 @@ function readView() {
 
 export const desktopView = isDesktop ? readView() : "home";
 
+// Платформа нужна и CSS: на Linux встроенное перетаскивание за заголовок
+// работает не всегда, там окно тянем сами через IPC.
+if (isDesktop && typeof document !== "undefined") {
+  document.documentElement.classList.add(`desktop-${platform}`);
+}
+
 /* ------------------------- управление окном ------------------------- */
 
 export async function windowAction(action) {
@@ -61,6 +67,55 @@ export async function openCallWindow(code, { nick } = {}) {
   }
 }
 
+/* --------------------------- перетаскивание окна --------------------------- */
+
+/**
+ * Ручное перетаскивание окна за заголовок.
+ *
+ * -webkit-app-region: drag работает на Windows/macOS и на большинстве
+ * X11-окружений, но под Wayland/XWayland часто игнорируется, и окно
+ * нечем сдвинуть. Здесь мы сообщаем главному процессу начало и конец
+ * перетаскивания, а он двигает окно по курсору.
+ */
+export function bindWindowDrag(handle) {
+  if (!bridge?.dragStart || !handle) return () => {};
+
+  let dragging = false;
+
+  const start = (event) => {
+    // кнопки заголовка и меню перетаскивать не должны
+    if (event.button !== 0) return;
+    if (event.target.closest("button, input, select, a, .menubar")) return;
+    dragging = true;
+    try {
+      handle.setPointerCapture?.(event.pointerId);
+    } catch {
+      /* старые движки */
+    }
+    bridge.dragStart();
+  };
+
+  const stop = () => {
+    if (!dragging) return;
+    dragging = false;
+    bridge.dragEnd();
+  };
+
+  handle.addEventListener("pointerdown", start);
+  handle.addEventListener("pointerup", stop);
+  handle.addEventListener("pointercancel", stop);
+  handle.addEventListener("lostpointercapture", stop);
+  window.addEventListener("blur", stop);
+
+  return () => {
+    handle.removeEventListener("pointerdown", start);
+    handle.removeEventListener("pointerup", stop);
+    handle.removeEventListener("pointercancel", stop);
+    handle.removeEventListener("lostpointercapture", stop);
+    window.removeEventListener("blur", stop);
+  };
+}
+
 /* --------------------------- закрытие окна --------------------------- */
 
 /**
@@ -92,6 +147,9 @@ export function bindNativeControls(root) {
 
   const titlebar = root.querySelector(".titlebar");
   const minBtn = root.querySelector("[data-win-min]");
+
+  // заголовок тянет окно: сначала средствами системы, а на Linux — сами
+  if (titlebar) bindWindowDrag(titlebar);
   const maxBtn = root.querySelector("[data-win-max]");
   const closeBtn = root.querySelector("[data-win-close]");
 

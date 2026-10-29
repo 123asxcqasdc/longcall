@@ -17,6 +17,10 @@ contextBridge.exposeInMainWorld("longcallDesktop", {
   /** Открыть комнату в отдельном настоящем окне. */
   openCall: (payload) => ipcRenderer.invoke("desktop:open-call", payload),
 
+  /** Начало/конец перетаскивания окна за заголовок (для Linux/Wayland). */
+  dragStart: () => ipcRenderer.send("desktop:drag-start"),
+  dragEnd: () => ipcRenderer.send("desktop:drag-end"),
+
   /** Сообщить главному процессу, что можно закрывать окно. */
   readyToClose: () => ipcRenderer.send("desktop:ready-to-close"),
 
