@@ -1327,6 +1327,7 @@ function fileTime(at) {
 /** Иконка для типа файла: видео, звук, текст или обычный документ. */
 function fileIcon(entry) {
   const kind = previewKind(entry);
+  if (kind === "image") return "i-image";
   if (kind === "video") return "i-film";
   if (kind === "audio") return "i-music";
   if (kind === "text") return "i-text";
@@ -1399,7 +1400,32 @@ async function openPreview(entry) {
     );
     holder.append(head);
 
-    if (data.kind === "video" || data.kind === "audio") {
+    if (data.kind === "image") {
+      const figure = el("div", { class: "preview-figure" });
+      const img = el("img", { class: "preview-image", alt: data.name });
+      img.src = data.url;
+      figure.append(img);
+      holder.append(figure);
+
+      const note = el("p", { class: "small-dim", text: t("files.preview.loading") });
+      holder.append(note);
+
+      // Размеры показываем только когда картинка реально загрузилась:
+      // до этого naturalWidth равен нулю.
+      img.addEventListener("load", () => {
+        const w = img.naturalWidth || 0;
+        const h = img.naturalHeight || 0;
+        note.textContent = w && h
+          ? t("files.preview.dimensions", { w, h })
+          : t("files.preview.imageHint");
+      });
+      img.addEventListener("error", () => {
+        figure.classList.add("broken");
+        note.textContent = t("files.preview.imageBroken");
+        note.classList.remove("small-dim");
+        note.classList.add("preview-error");
+      });
+    } else if (data.kind === "video" || data.kind === "audio") {
       media = el(data.kind === "video" ? "video" : "audio", {
         class: `preview-media preview-${data.kind}`,
         controls: "",

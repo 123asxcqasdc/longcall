@@ -26,6 +26,7 @@ const FILES = APP.files;
 
 // Что открывается во встроенном просмотрщике. Списки — на случай пустого
 // MIME: браузеры часто не знают тип по расширению.
+const IMAGE_EXT = ["jpg", "jpeg", "png", "gif", "webp", "bmp", "avif", "ico", "svg"];
 const VIDEO_EXT = ["mp4", "m4v", "webm", "ogv", "mov"];
 const AUDIO_EXT = ["mp3", "wav", "ogg", "oga", "m4a", "aac", "flac", "opus"];
 const TEXT_EXT = ["txt", "md", "log", "json", "csv", "tsv", "ini", "conf", "yml", "yaml", "srt"];
@@ -33,6 +34,19 @@ const TEXT_EXT = ["txt", "md", "log", "json", "csv", "tsv", "ini", "conf", "yml"
 // Больше этого в окно просмотра не выводим: DOM на несколько мегабайт
 // текста подвешивает вкладку, а читать такое всё равно невозможно.
 const TEXT_PREVIEW_LIMIT = 100 * 1024;
+
+// MIME для картинок, у которых отправитель не заполнил тип.
+const MIME_BY_EXT = {
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+  gif: "image/gif",
+  webp: "image/webp",
+  bmp: "image/bmp",
+  avif: "image/avif",
+  ico: "image/x-icon",
+  svg: "image/svg+xml",
+};
 
 /* ------------------------------- base64 -------------------------------- */
 
@@ -151,7 +165,7 @@ export function fileExt(name) {
 }
 
 /**
- * Что можно показать прямо в приложении: видео, звук или текст.
+ * Что можно показать прямо в приложении: картинка, видео, звук или текст.
  * Сначала смотрим MIME, потом расширение — браузеры часто отдают
  * пустой type для mp4 с нестандартным именем.
  */
@@ -159,6 +173,7 @@ export function previewKind(entry) {
   const type = String(entry?.type || "").toLowerCase();
   const ext = fileExt(entry?.name);
 
+  if (type.startsWith("image/") || IMAGE_EXT.includes(ext)) return "image";
   if (type.startsWith("video/") || VIDEO_EXT.includes(ext)) return "video";
   if (type.startsWith("audio/") || AUDIO_EXT.includes(ext)) return "audio";
   if (type.startsWith("text/") || TEXT_EXT.includes(ext)) return "text";
@@ -401,15 +416,21 @@ export class RoomFiles {
   }
 
   /**
-   * Данные для окна просмотра: видео и звук отдаём как blob-URL,
+   * Данные для окна просмотра: картинки, видео и звук отдаём как blob-URL,
    * текст — строкой (первые TEXT_PREVIEW_LIMIT байт).
    * dispose() освобождает URL, его обязательно вызывать при закрытии окна.
+   *
+   * Для картинок Blob пересобираем с MIME по расширению: у файлов из
+   * старого софта type часто пустой, а <img> без MIME SVG не покажет.
    */
   async preview(entry) {
     const kind = previewKind(entry);
     if (!kind) throw new AppError("fileNoPreview");
-    const blob = await this.read(entry);
+    let blob = await this.read(entry);
     const name = cleanFileName(entry.name);
+    if (kind === "image" && !String(entry.type || "").startsWith("image/")) {
+      blob = new Blob([blob], { type: MIME_BY_EXT[fileExt(entry.name)] || "image/*" });
+    }
     const base = { kind, name, size: blob.size, dispose: () => {} };
 
     if (kind === "text") {

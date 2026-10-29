@@ -474,6 +474,23 @@ body.is-booting .desktop > .win:not(.splash) { visibility: hidden; }
   outline: none;
 }
 .preview-audio { height: 46px; background: var(--face); }
+.preview-figure {
+  display: flex;
+  justify-content: center;
+  padding: 3px;
+  background: #fff;
+  box-shadow: var(--bevel-in);
+}
+.preview-figure.broken { display: none; }
+.preview-image {
+  display: block;
+  max-width: 100%;
+  max-height: 320px;
+  /* Чёткие пиксели: скриншоты и мелкие картинки не «мылятся» при растяжении. */
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+}
+.preview-error { color: #8b0000; }
 .preview-text {
   margin: 0;
   padding: 4px 6px;
