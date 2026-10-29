@@ -13,7 +13,7 @@ import { audioEngine } from "./audio.js";
 import { CallSession } from "./call.js";
 import { resolveIceServers, resetIceCache } from "./turn.js";
 import { CallDiagnostics } from "./diagnostics.js";
-import { RoomFiles, formatSize } from "./files.js";
+import { RoomFiles, formatSize, previewKind } from "./files.js";
 import { CallView } from "./callui.js";
 import {
   $,
@@ -1324,16 +1324,145 @@ function fileTime(at) {
   });
 }
 
-/** Строка списка файлов: имя, размер, отправитель, «Скачать» и «Удалить». */
+/** Иконка для типа файла: видео, звук, текст или обычный документ. */
+function fileIcon(entry) {
+  const kind = previewKind(entry);
+  if (kind === "video") return "i-film";
+  if (kind === "audio") return "i-music";
+  if (kind === "text") return "i-text";
+  return "i-notepad";
+}
+
+/**
+ * Просмотр файла прямо в звонке: mp4/webm — плеером, mp3/wav — плеером,
+ * текст — в моноширинном окне. Остальные типы только скачиваются.
+ */
+async function openPreview(entry) {
+  const files = state.files;
+  if (!files) return;
+
+  const kind = previewKind(entry);
+  if (!kind) {
+    toast({ title: t("err.title"), text: t("err.fileNoPreview"), icon: "i-warn", tone: "error" });
+    return;
+  }
+
+  const holder = el("div", { class: "preview-body" });
+  holder.append(el("p", { class: "small-dim", text: t("files.preview.loading") }));
+
+  let dispose = () => {};
+  let media = null;
+
+  const api = openModal({
+    title: t("files.preview.title"),
+    icon: fileIcon(entry),
+    body: holder,
+    width: "480px",
+    buttons: [
+      {
+        label: t("files.download"),
+        busy: false,
+        onClick: async () => {
+          try {
+            await files.download(entry);
+          } catch (err) {
+            toast({ title: t("err.title"), text: errorText(err), icon: "i-warn", tone: "error" });
+          }
+          return false; // окно просмотра не закрываем
+        },
+      },
+      { label: t("files.close"), onClick: () => {} },
+    ],
+    onClose: () => {
+      // Останавливаем звук и отпускаем blob-URL, иначе файл висит в памяти.
+      try {
+        media?.pause?.();
+      } catch {}
+      dispose();
+      dispose = () => {};
+    },
+  });
+
+  try {
+    const data = await files.preview(entry);
+    dispose = data.dispose;
+    holder.textContent = "";
+
+    const head = el("div", { class: "preview-head" });
+    const nameEl = el("div", { class: "file-name", text: data.name, title: data.name });
+    head.append(nameEl);
+    head.append(
+      el("div", {
+        class: "small-dim",
+        text: [formatSize(data.size), entry.nick || "", fileTime(entry.at)].filter(Boolean).join(" · "),
+      })
+    );
+    holder.append(head);
+
+    if (data.kind === "video" || data.kind === "audio") {
+      media = el(data.kind === "video" ? "video" : "audio", {
+        class: `preview-media preview-${data.kind}`,
+        controls: "",
+        preload: "metadata",
+        playsinline: "",
+      });
+      media.src = data.url;
+      holder.append(media);
+      holder.append(
+        el("p", {
+          class: "small-dim",
+          text: data.kind === "video" ? t("files.preview.videoHint") : t("files.preview.audioHint"),
+        })
+      );
+    } else {
+      const text = String(data.text || "");
+      if (!text.trim()) {
+        holder.append(el("p", { class: "small-dim", text: t("files.preview.empty") }));
+      } else {
+        holder.append(el("pre", { class: "preview-text", text }));
+      }
+      if (data.encoding && data.encoding !== "utf-8") {
+        holder.append(
+          el("p", { class: "small-dim", text: t("files.preview.encoding", { enc: data.encoding }) })
+        );
+      }
+      if (data.truncated) {
+        holder.append(
+          el("p", {
+            class: "small-dim",
+            text: t("files.preview.truncated", {
+              shown: formatSize(data.shown),
+              total: formatSize(data.size),
+            }),
+          })
+        );
+      }
+    }
+  } catch (err) {
+    api.close();
+    toast({ title: t("err.title"), text: errorText(err), icon: "i-warn", tone: "error" });
+  }
+}
+
+/** Строка списка файлов: имя, размер, отправитель, «Просмотр», «Скачать», «Удалить». */
 function fileRow(entry) {
   const row = el("div", { class: "file-row" });
 
-  const ico = el("span", { class: "file-ico" });
-  ico.append(svgUse("i-notepad"));
+  const kind = previewKind(entry);
+  const ico = el("span", { class: `file-ico kind-${kind || "file"}` });
+  ico.append(svgUse(fileIcon(entry)));
   row.append(ico);
 
   const info = el("div", { class: "file-info grow" });
-  info.append(el("div", { class: "file-name", text: entry.name, title: entry.name }));
+  const nameEl = el("div", {
+    class: kind ? "file-name is-previewable" : "file-name",
+    text: entry.name,
+    title: kind ? t("files.preview.open", { name: entry.name }) : entry.name,
+  });
+  if (kind) {
+    nameEl.addEventListener("click", () => openPreview(entry));
+  }
+  info.append(nameEl);
   const meta = [formatSize(entry.size), entry.nick || "…", fileTime(entry.at)]
     .filter(Boolean)
     .join(" · ");
@@ -1341,6 +1470,12 @@ function fileRow(entry) {
   row.append(info);
 
   const actions = el("div", { class: "file-actions" });
+
+  if (kind) {
+    const view = el("button", { type: "button", class: "btn btn-sm", text: t("files.view") });
+    view.addEventListener("click", () => openPreview(entry));
+    actions.append(view);
+  }
 
   const save = el("button", { type: "button", class: "btn btn-sm", text: t("files.download") });
   save.addEventListener("click", async () => {

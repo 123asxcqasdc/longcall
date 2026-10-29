@@ -24,6 +24,16 @@ import { getLang } from "./i18n.js";
 
 const FILES = APP.files;
 
+// Что открывается во встроенном просмотрщике. Списки — на случай пустого
+// MIME: браузеры часто не знают тип по расширению.
+const VIDEO_EXT = ["mp4", "m4v", "webm", "ogv", "mov"];
+const AUDIO_EXT = ["mp3", "wav", "ogg", "oga", "m4a", "aac", "flac", "opus"];
+const TEXT_EXT = ["txt", "md", "log", "json", "csv", "tsv", "ini", "conf", "yml", "yaml", "srt"];
+
+// Больше этого в окно просмотра не выводим: DOM на несколько мегабайт
+// текста подвешивает вкладку, а читать такое всё равно невозможно.
+const TEXT_PREVIEW_LIMIT = 100 * 1024;
+
 /* ------------------------------- base64 -------------------------------- */
 
 function bytesToBase64(bytes) {
@@ -41,6 +51,118 @@ function base64ToBytes(text) {
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
   return bytes;
+}
+
+/**
+ * Текст без TextDecoder (его нет в старых движках и в jsdom): собираем
+ * строку вручную. Каждая последовательность проверяется по длине и по
+ * continuation-байтам, битые места заменяются на U+FFFD — иначе «FF FE»
+ * съедало бы соседние символы и давало мусорные суррогаты.
+ */
+function decodeUtf8(bytes) {
+  if (typeof TextDecoder === "function") {
+    try {
+      return new TextDecoder("utf-8").decode(bytes);
+    } catch {}
+  }
+  const out = [];
+  const chunks = [];
+  const push = (code) => {
+    chunks.push(String.fromCharCode(code));
+    if (chunks.length >= 8192) {
+      out.push(chunks.join(""));
+      chunks.length = 0;
+    }
+  };
+  const cont = (index) => {
+    const byte = bytes[index];
+    return byte !== undefined && byte >= 0x80 && byte <= 0xbf;
+  };
+
+  let i = 0;
+  while (i < bytes.length) {
+    const b0 = bytes[i];
+    if (b0 < 0x80) {
+      push(b0);
+      i += 1;
+    } else if (b0 >= 0xc2 && b0 <= 0xdf && cont(i + 1)) {
+      push(((b0 & 0x1f) << 6) | (bytes[i + 1] & 0x3f));
+      i += 2;
+    } else if (b0 >= 0xe0 && b0 <= 0xef && cont(i + 1) && cont(i + 2)) {
+      const cp = ((b0 & 0x0f) << 12) | ((bytes[i + 1] & 0x3f) << 6) | (bytes[i + 2] & 0x3f);
+      // Перечёркиваем overlong-формы и суррогаты: их в UTF-8 быть не может.
+      push(cp < 0x800 || (cp >= 0xd800 && cp <= 0xdfff) ? 0xfffd : cp);
+      i += 3;
+    } else if (b0 >= 0xf0 && b0 <= 0xf4 && cont(i + 1) && cont(i + 2) && cont(i + 3)) {
+      const cp =
+        ((b0 & 0x07) << 18) |
+        ((bytes[i + 1] & 0x3f) << 12) |
+        ((bytes[i + 2] & 0x3f) << 6) |
+        (bytes[i + 3] & 0x3f);
+      if (cp < 0x10000 || cp > 0x10ffff) {
+        push(0xfffd);
+      } else {
+        const offset = cp - 0x10000;
+        push(0xd800 + (offset >> 10));
+        push(0xdc00 + (offset & 0x3ff));
+      }
+      i += 4;
+    } else {
+      push(0xfffd);
+      i += 1;
+    }
+  }
+  out.push(chunks.join(""));
+  return out.join("");
+}
+
+/**
+ * Текст из байтов с разумным выбором кодировки. Блокнот Windows 9x
+ * сохранял .txt в Windows-1251, и такой файл в UTF-8 выглядел бы
+ * «ромашками». Если UTF-8 даёт много замен, пробуем cp1251.
+ */
+export function decodeText(bytes) {
+  const utf8 = decodeUtf8(bytes);
+  if (!bytes.length) return { text: "", encoding: "utf-8" };
+
+  let broken = 0;
+  for (let i = 0; i < utf8.length; i += 1) if (utf8.charCodeAt(i) === 0xfffd) broken += 1;
+  if (broken === 0 || broken / utf8.length < 0.02) return { text: utf8, encoding: "utf-8" };
+
+  if (typeof TextDecoder === "function") {
+    for (const label of ["windows-1251", "windows-1252"]) {
+      try {
+        const cyrillic = new TextDecoder(label).decode(bytes);
+        let cyr = 0;
+        for (const ch of cyrillic) if (ch >= "\u0400" && ch <= "\u04ff") cyr += 1;
+        if (cyrillic && (label === "windows-1251" ? cyr > 0 : true)) {
+          return { text: cyrillic, encoding: label };
+        }
+      } catch {}
+    }
+  }
+  return { text: utf8, encoding: "utf-8" };
+}
+
+/** Расширение в нижнем регистре, без точки: "song.MP3" → "mp3". */
+export function fileExt(name) {
+  const match = /\.([a-z0-9]{1,8})$/i.exec(String(name || "").trim());
+  return match ? match[1].toLowerCase() : "";
+}
+
+/**
+ * Что можно показать прямо в приложении: видео, звук или текст.
+ * Сначала смотрим MIME, потом расширение — браузеры часто отдают
+ * пустой type для mp4 с нестандартным именем.
+ */
+export function previewKind(entry) {
+  const type = String(entry?.type || "").toLowerCase();
+  const ext = fileExt(entry?.name);
+
+  if (type.startsWith("video/") || VIDEO_EXT.includes(ext)) return "video";
+  if (type.startsWith("audio/") || AUDIO_EXT.includes(ext)) return "audio";
+  if (type.startsWith("text/") || TEXT_EXT.includes(ext)) return "text";
+  return null;
 }
 
 /* ------------------------------ утилиты -------------------------------- */
@@ -255,7 +377,8 @@ export class RoomFiles {
 
   /* ------------------------------- загрузка ------------------------------ */
 
-  async download(entry) {
+  /** Собирает файл из частей в Blob. Общая часть скачивания и просмотра. */
+  async read(entry) {
     if (!entry?.id) throw new AppError("fileFailed", { msg: "no id" });
     let snap;
     try {
@@ -274,8 +397,40 @@ export class RoomFiles {
       chunks.push(base64ToBytes(chunk));
     }
     if (!chunks.length) throw new AppError("fileBroken");
+    return new Blob(chunks, { type: entry.type || "application/octet-stream" });
+  }
 
-    const blob = new Blob(chunks, { type: entry.type || "application/octet-stream" });
+  /**
+   * Данные для окна просмотра: видео и звук отдаём как blob-URL,
+   * текст — строкой (первые TEXT_PREVIEW_LIMIT байт).
+   * dispose() освобождает URL, его обязательно вызывать при закрытии окна.
+   */
+  async preview(entry) {
+    const kind = previewKind(entry);
+    if (!kind) throw new AppError("fileNoPreview");
+    const blob = await this.read(entry);
+    const name = cleanFileName(entry.name);
+    const base = { kind, name, size: blob.size, dispose: () => {} };
+
+    if (kind === "text") {
+      const limit = Math.min(blob.size, TEXT_PREVIEW_LIMIT);
+      const bytes = new Uint8Array(await blob.slice(0, limit).arrayBuffer());
+      const { text, encoding } = decodeText(bytes);
+      return {
+        ...base,
+        text,
+        encoding,
+        truncated: blob.size > limit,
+        shown: limit,
+      };
+    }
+
+    const url = URL.createObjectURL(blob);
+    return { ...base, url, dispose: () => URL.revokeObjectURL(url) };
+  }
+
+  async download(entry) {
+    const blob = await this.read(entry);
     const name = cleanFileName(entry.name);
 
     // В обёртке Electron просим системный диалог «Сохранить как»: иначе
