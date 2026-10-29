@@ -98,7 +98,7 @@ const DICT = {
     "call.status.offline": "Связь: нет сети",
     "call.duration": "Длительность",
     "call.ended": "Звонок завершён",
-    "call.githubPages": "GitHub Pages",
+    "call.webHost": "Веб",
 
     "call.progress.join": "Регистрация в комнате {code}…",
     "call.progress.media": "Запрос доступа к микрофону…",
@@ -350,7 +350,7 @@ const DICT = {
     "call.status.offline": "Link: offline",
     "call.duration": "Duration",
     "call.ended": "Call ended",
-    "call.githubPages": "GitHub Pages",
+    "call.webHost": "Web",
 
     "call.progress.join": "Registering in room {code}…",
     "call.progress.media": "Requesting microphone access…",

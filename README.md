@@ -7,10 +7,10 @@
 в обёртке вместо рабочего стола настоящие окна операционной системы.
 
 Только звук, до **4 человек** в комнате, без установки и без паролей.
-Хостинг веб-версии — GitHub Pages (статика), сигналинг — Firebase Realtime Database, звук — WebRTC.
+Хостинг веб-версии — GitHub Pages (статика) на своём домене, сигналинг — Firebase Realtime Database, звук — WebRTC.
 
 ```
-https://123asxcqasdc.github.io/longcall/
+https://longcall.c6t.ru/
 ```
 
 ## Что внутри
@@ -96,7 +96,7 @@ Windows-сборка не подписана — SmartScreen может пока
 ### Ссылки между веб-версией и приложением
 
 - Ссылка на комнату, которую копирует кнопка «Ссылка», — обычный адрес сайта:
-  `https://123asxcqasdc.github.io/longcall/?room=1234`. В приложении она больше не
+  `https://longcall.c6t.ru/?room=1234`. В приложении она больше не
   превращается в `app://longcall/…`.
 - Открыть комнату в установленном приложении можно по ссылке
   `longcall://join?room=1234` — в браузере для этого есть кнопка «Открыть в приложении»
@@ -232,8 +232,10 @@ css/desktop.css        режим обёртки: без рабочего сто
    Firebase Console → Authentication → Sign-in method → включить **Anonymous**.
 
 2. **Авторизованные домены.**
-   Authentication → Settings → Authorized domains → добавить `123asxcqasdc.github.io`
-   (и `localhost`, если проверяете локально).
+   Authentication → Settings → Authorized domains → добавить `longcall.c6t.ru`
+   (и `localhost`, если проверяете локально). Старый адрес `123asxcqasdc.github.io`
+   можно оставить — GitHub Pages отдаёт сайт и по нему. Без этого шага на новом
+   домене вход в Firebase не пройдёт: приложение покажет «Не удалось войти в Firebase».
 
 3. **Правила базы данных.**
    Realtime Database → Rules → вставить содержимое [`database.rules.json`](database.rules.json).
@@ -342,9 +344,24 @@ Workflow [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) пров
 1. **Settings → Pages → Build and deployment → Source: GitHub Actions.**
 2. **Actions → Deploy to GitHub Pages → Re-run jobs** (или просто следующий пуш в `main`).
 
-После этого сайт живёт на `https://123asxcqasdc.github.io/longcall/` и обновляется
+После этого сайт живёт на `https://longcall.c6t.ru/` и обновляется
 автоматически при каждом пуше в `main`. Пока Pages не включён, сборка остаётся зелёной —
 workflow проверяет доступность Pages API и пропускает шаги деплоя.
+
+### Свой домен
+
+Домен `longcall.c6t.ru` подключён к Pages как custom domain, а в корне лежит файл
+[`CNAME`](CNAME) — он закрепляет адрес за сайтом и попадает в публикуемую сборку.
+
+- DNS: `CNAME longcall → 123asxcqasdc.github.io` (у apex-домена — A-записи
+  `185.199.108.153`, `185.199.109.153`, `185.199.110.153`, `185.199.111.153`).
+- Pages → Settings → Custom domain: `longcall.c6t.ru`, затем «Enforce HTTPS».
+  Сертификат выпускается автоматически и продлевается сам.
+- Firebase → Authentication → Settings → **Authorized domains**: `longcall.c6t.ru`
+  обязателен, иначе анонимный вход на новом домене не работает.
+
+Ссылки на комнаты собираются из `SITE_URL` в [`js/config.js`](js/config.js) — это
+единственное место, где записан публичный адрес приложения.
 
 Альтернатива без Actions: Settings → Pages → Source: **Deploy from a branch** → `main` → `/ (root)`.
 Сайт заработает сразу, но тогда workflow деплоя не нужен и его лучше отключить.
