@@ -1,0 +1,109 @@
+/* ============================================================
+   desktop.css — режим Electron-обёртки
+   Включается классом html.is-desktop (его ставит инлайновый скрипт
+   в <head> при user-agent вида "Electron/").
+
+   В обёртке нет «рабочего стола»: каждое окно приложения — настоящий
+   BrowserWindow без системной рамки, поэтому окно Win98 растягивается
+   на весь BrowserWindow, а его заголовок становится drag-зоной.
+   ============================================================ */
+
+html.is-desktop,
+html.is-desktop body {
+  height: 100%;
+  overflow: hidden;
+  background: var(--face);
+}
+
+/* «Рабочий стол», панель задач и «Пуск» живут только в браузере */
+html.is-desktop .desk-icons,
+html.is-desktop .desk-watermark,
+html.is-desktop .taskbar,
+html.is-desktop .startmenu {
+  display: none !important;
+}
+
+html.is-desktop .desktop {
+  background: var(--face);
+  background-image: none;
+  padding: 0;
+}
+
+/* Окно занимает всё пространство настоящего окна */
+html.is-desktop .win {
+  position: absolute;
+  inset: 0;
+  left: 0 !important;
+  top: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: auto !important;
+  height: auto !important;
+  max-height: none;
+  margin: 0;
+  transform: none !important;
+  box-shadow: none;
+  border-radius: 0;
+  z-index: 20;
+}
+
+html.is-desktop .win.hidden { display: none !important; }
+
+/* Сплэш не нужен: окно и так открывается мгновенно */
+html.is-desktop .win.splash { display: none !important; }
+
+/* Пока идёт загрузка, окно всё равно должно быть видно
+   (в браузере его прикрывает сплэш) */
+html.is-desktop body.is-booting .desktop > .win:not(.splash) { visibility: visible; }
+
+/* Заголовок — область перетаскивания настоящего окна */
+html.is-desktop .titlebar {
+  -webkit-app-region: drag;
+  cursor: default;
+}
+
+/* Всё интерактивное в заголовке — не drag */
+html.is-desktop .titlebar-btns,
+html.is-desktop .titlebar-btns *,
+html.is-desktop .menubar,
+html.is-desktop .menubar * {
+  -webkit-app-region: no-drag;
+}
+
+html.is-desktop .tb-btn { width: 18px; height: 15px; }
+
+/* Развёрнуто: кнопка показывает «восстановить» — два наложенных окна */
+html.is-desktop .tb-max::before {
+  width: 8px;
+  height: 6px;
+  top: 58%;
+}
+
+html.is-desktop.is-maximized .tb-max::before {
+  width: 6px;
+  height: 5px;
+  box-shadow: 2px -2px 0 -1px var(--face), 2px -2px 0 0 #000;
+}
+
+/* Всплывающие уведомления не должны перекрывать кнопки окна */
+html.is-desktop .toasts {
+  bottom: 8px;
+  right: 8px;
+}
+
+/* Диалоги: чуть плотнее, окно и так небольшое */
+html.is-desktop .modal-layer { padding: 10px; }
+html.is-desktop .modal { max-height: calc(100% - 24px); }
+
+/* Поля ввода и списки в обёртке не должны «тянуть» окно за собой */
+html.is-desktop .listbox,
+html.is-desktop .call-log,
+html.is-desktop .win-content {
+  overscroll-behavior: contain;
+}
+
+/* На узких окнах обёртки прячем лишнее так же, как в мобильной вёрстке */
+@media (max-width: 560px) {
+  html.is-desktop .hero-hint { display: none; }
+  html.is-desktop .hero-logo { width: 38px; height: 38px; }
+}

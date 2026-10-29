@@ -3,13 +3,65 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "LongCall 98 — lightweight audio-only group calls with Windows 9x looks",
+  "description": "LongCall 98 — лёгкие аудиозвонки в стиле Windows 9x (веб + приложение для Windows и Linux)",
   "scripts": {
+    "start": "electron .",
+    "dev": "electron . --enable-logging",
+    "serve": "python3 -m http.server 8080 --bind 0.0.0.0",
     "build:vendor": "esbuild tools/firebase-entry.js --bundle --format=esm --minify --legal-comments=none --outfile=vendor/firebase.js",
-    "serve": "python3 -m http.server 8080 --bind 0.0.0.0"
+    "dist": "electron-builder --publish never",
+    "dist:linux": "electron-builder --linux --publish never",
+    "dist:win": "electron-builder --win --publish never"
   },
   "devDependencies": {
     "esbuild": "0.28.2",
-    "firebase": "13.1.0"
+    "firebase": "13.1.0",
+    "electron": "^45.1.0",
+    "electron-builder": "^26.18.0"
+  },
+  "main": "electron/main.cjs",
+  "build": {
+    "appId": "io.github.longcall98",
+    "productName": "LongCall 98",
+    "copyright": "© 2026 LongCall",
+    "directories": {
+      "output": "release",
+      "buildResources": "electron/icons"
+    },
+    "files": [
+      "index.html",
+      "css/**/*",
+      "js/**/*",
+      "vendor/**/*",
+      "assets/**/*",
+      "electron/main.cjs",
+      "electron/preload.cjs",
+      "electron/icons/**/*",
+      "!**/*.map"
+    ],
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Network",
+      "icon": "electron/icons",
+      "description": "Аудиозвонки в стиле Windows 9x",
+      "synopsis": "LongCall 98 — звонки в стиле Windows 9x"
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "icon": "electron/icons/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "LongCall 98"
+    }
   }
 }

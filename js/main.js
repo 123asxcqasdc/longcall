@@ -50,6 +50,13 @@ import {
   roomSnapshot,
 } from "./firebase.js";
 import { WindowManager, openModal, confirmModal, toast, initMenus } from "./ui.js";
+import {
+  isDesktop,
+  desktopView,
+  openCallWindow,
+  closeWindow,
+  onBeforeClose,
+} from "./desktop.js";
 
 const state = {
   uid: null,
@@ -68,6 +75,9 @@ const state = {
 
 const callView = new CallView();
 let wm = null;
+// true, когда окно закрывает система (кнопка ×, Alt+F4, выход из приложения)
+let systemClosing = false;
+const inCallWindow = () => isDesktop && desktopView === "call";
 
 /* =========================================================================
    Загрузка и «вход»
@@ -89,7 +99,7 @@ async function boot() {
   const ver = $(".splash-logo small");
   if (ver) ver.textContent = t("boot.version", { v: APP.version });
 
-  await runBootSplash();
+  if (!isDesktop) await runBootSplash();
 
   if (!audioEngine.supported) {
     finishBoot();
@@ -104,6 +114,12 @@ async function boot() {
 
   let profile = getProfile();
   let nick = profile?.nick ? sanitizeNick(profile.nick) : "";
+
+  // В отдельном окне звонка имя берём из localStorage или из ссылки,
+  // модалку знакомства там не показываем.
+  if (!nick && inCallWindow()) {
+    nick = sanitizeNick(new URLSearchParams(location.search).get("nick")) || "";
+  }
 
   if (!nick) {
     const entered = await askNickname({ first: true });
@@ -133,6 +149,17 @@ async function boot() {
   updateHomeStatus();
   finishBoot();
   audioEngine.playSound("boot").catch(() => {});
+
+  if (inCallWindow()) {
+    // Окно звонка сразу подключается к своей комнате.
+    const code = normalizeRoomCode(new URLSearchParams(location.search).get("room"));
+    if (!code) {
+      closeWindow();
+      return;
+    }
+    await openCall(code);
+    return;
+  }
 
   watchRecentCalls();
   await refreshRecentFromCache();
@@ -473,13 +500,39 @@ async function generateFreeCode() {
   return randomRoomCode();
 }
 
+/**
+ * В браузере звонок открывается внутри «рабочего стола»,
+ * в обёртке — отдельным настоящим окном с тем же номером комнаты.
+ */
+async function startCall(code) {
+  if (isDesktop) {
+    const ok = await openCallWindow(code, { nick: state.nick });
+    if (!ok) {
+      toast({
+        title: t("err.title"),
+        text: t("err.callFailed"),
+        icon: "i-warn",
+        tone: "error",
+      });
+      return false;
+    }
+    if (state.uid) {
+      touchRecent(state.uid, code, { nick: state.nick, joinedAt: Date.now() }).catch(() => {});
+    }
+    audioEngine.playSound("join").catch(() => {});
+    return true;
+  }
+  await openCall(code);
+  return true;
+}
+
 async function createCall() {
   if (!ensureReady()) return;
   if (state.session) {
     await hangup({ silent: true });
   }
   const code = await generateFreeCode();
-  await openCall(code);
+  await startCall(code);
 }
 
 async function joinRoom(code, { source = "manual", prompted = false } = {}) {
@@ -529,7 +582,7 @@ async function joinRoom(code, { source = "manual", prompted = false } = {}) {
   if (state.session) {
     await hangup({ silent: true });
   }
-  await openCall(code);
+  await startCall(code);
 }
 
 function ensureReady() {
@@ -655,12 +708,17 @@ async function openCall(code) {
     url2.searchParams.delete("room");
     history.replaceState({}, "", url2);
 
+    const closeAfterModal = () => {
+      if (inCallWindow()) closeWindow();
+    };
+
     if (err instanceof AppError && err.code === "full") {
       openModal({
         title: t("modal.full.title"),
         icon: "i-warn",
         body: el("p", { text: t("modal.full.text", { code, max: APP.maxParticipants }) }),
         buttons: [{ label: t("common.close"), onClick: () => {} }],
+        onClose: closeAfterModal,
       });
     } else if (err instanceof AppError && err.code === "mic") {
       const listenOnly = await new Promise((resolve) => {
@@ -673,14 +731,18 @@ async function openCall(code) {
             { label: t("common.retry"), onClick: () => { answered = true; resolve("retry"); } },
             { label: t("common.cancel"), onClick: () => { answered = true; resolve(null); } },
           ],
-          onClose: () => { if (!answered) resolve(null); },
+          onClose: () => {
+            if (!answered) resolve(null);
+            closeAfterModal();
+          },
         });
       });
       if (listenOnly === "retry") await audioEngine.acquire(getPreferredMic()).catch(() => {});
     } else {
       toast({ title: t("err.title"), text: errorText(err), icon: "i-warn", tone: "error" });
+      closeAfterModal();
     }
-    refreshRecentFromCache();
+    if (!isDesktop) refreshRecentFromCache();
   }
 }
 
@@ -713,7 +775,10 @@ async function hangup({ silent = false } = {}) {
     toast({ title: t("toast.leftTitle"), text: t("toast.leftText", { code: session?.code || "" }), icon: "i-phone" });
     audioEngine.playSound("leave").catch(() => {});
   }
-  refreshRecentFromCache();
+  if (!isDesktop) refreshRecentFromCache();
+
+  // Окно звонка в обёртке закрывается вместе с комнатой.
+  if (inCallWindow() && !systemClosing) closeWindow();
 }
 
 async function handleInvite(code) {
@@ -1177,26 +1242,45 @@ function syncLangButtons() {
 function setupWindowManager() {
   wm = new WindowManager($("#desktop"), $("#taskbarTasks"));
 
-  wm.register("home", $("#winHome"), {
-    label: () => t("status.tab.home"),
-    icon: "i-phone",
-    onClose: async () => true,
-  });
+  // В обёртке каждый BrowserWindow показывает ровно одно окно приложения.
+  const callOnly = inCallWindow();
+  if (callOnly) {
+    // В окне звонка главное окно не нужно вовсе.
+    $("#winHome")?.classList.add("hidden");
+  }
 
-  wm.register("call", $("#winCall"), {
-    label: () => (state.activeCode ? t("status.tab.call", { code: state.activeCode }) : t("call.title", { code: "" })),
-    icon: "i-phone",
-    onClose: async () => {
-      if (state.session) await hangup();
-      return false;
-    },
-  });
+  if (!callOnly) {
+    wm.register("home", $("#winHome"), {
+      label: () => t("status.tab.home"),
+      icon: "i-phone",
+      nativeControls: isDesktop,
+      onClose: async () => true,
+    });
+  }
 
-  wm.activeKey = "home";
-  $("#winHome").classList.add("focused");
-  $("#winCall").classList.add("inactive");
+  if (!isDesktop || callOnly) {
+    wm.register("call", $("#winCall"), {
+      label: () =>
+        state.activeCode
+          ? t("status.tab.call", { code: state.activeCode })
+          : t("call.title", { code: "" }),
+      icon: "i-phone",
+      nativeControls: isDesktop,
+      onClose: async () => {
+        if (state.session) await hangup();
+        return false;
+      },
+    });
+  }
+
+  wm.activeKey = callOnly ? "call" : "home";
+  $("#winHome")?.classList.add("focused");
+  $("#winCall")?.classList.add("inactive");
   wm.buildTaskbar();
-  wm.focus("home");
+
+  // Каркас окна звонка должен быть виден сразу, ещё до подключения к комнате.
+  if (callOnly) wm.open("call");
+  else wm.focus("home");
 }
 
 function setupChrome() {
@@ -1314,6 +1398,14 @@ function setupChrome() {
   window.addEventListener("beforeunload", () => {
     audioEngine.stopLocal();
   });
+
+  if (isDesktop) {
+    // Системное закрытие (×, Alt+F4, выход): сначала выходим из комнаты.
+    onBeforeClose(async () => {
+      systemClosing = true;
+      if (state.session) await hangup({ silent: true });
+    });
+  }
 
   onLangChange(() => {
     syncLangButtons();

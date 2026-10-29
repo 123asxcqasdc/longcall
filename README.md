@@ -1,10 +1,13 @@
 # LongCall 98
 
-Лёгкое веб-приложение для **аудиозвонков** в оформлении Windows 9x: рабочий стол, окна с
+Лёгкое приложение для **аудиозвонков** в оформлении Windows 9x: рабочий стол, окна с
 тильдой, панель задач, «Пуск» и синий прогресс-бар с бегущими «шашечками».
 
+Работает и в браузере, и как настольное приложение для **Windows и Linux** (Electron) —
+в обёртке вместо рабочего стола настоящие окна операционной системы.
+
 Только звук, до **4 человек** в комнате, без установки и без паролей.
-Хостинг — GitHub Pages (статика), сигналинг — Firebase Realtime Database, звук — WebRTC.
+Хостинг веб-версии — GitHub Pages (статика), сигналинг — Firebase Realtime Database, звук — WebRTC.
 
 ```
 https://123asxcqasdc.github.io/longcall/
@@ -22,6 +25,64 @@ https://123asxcqasdc.github.io/longcall/
 | Прогресс-бар Win9x | Загрузка приложения, вход в комнату, смена микрофона, загрузка истории |
 | Языки | Русский и английский, переключатель в меню и в настройках |
 | Звуки | Синтезируются через Web Audio, внешних файлов нет |
+
+## Приложение для Windows и Linux (Electron)
+
+Веб-версия живёт на GitHub Pages, но тот же код собирается в настольное приложение.
+Главное отличие — **в обёртке нет «рабочего стола»**: каждое окно приложения это
+настоящий `BrowserWindow` без системной рамки, а заголовок в стиле Win98 работает
+как drag-зона (перетаскивание, двойной клик — развернуть).
+
+| Что | Как сделано |
+| --- | --- |
+| Главное окно | `BrowserWindow` 720×720 (мин. 460×420), позиция запоминается в `userData` |
+| Окно звонка | отдельный `BrowserWindow` на комнату, сразу подключается к ней; размеры свои |
+| Кнопки `_ □ ×` | реальные `minimize` / `maximize` / `close` через IPC |
+| Рамка | `frame: false`; перетаскивание — CSS `-webkit-app-region: drag` |
+| Закрытие окна звонка | приложение сначала выходит из комнаты (`onDisconnect` успевает сработать), потом окно закрывается |
+| Микрофон | разрешение `media` выдаётся только на `audio`, видео запрещено |
+| Хранение | `localStorage`/cookie работают, потому что страницы отдаются по защищённой схеме `app://longcall`, а не `file://` |
+| Безопасность | `contextIsolation: true`, `sandbox: true`, `nodeIntegration: false`, узкий preload-мост, внешние ссылки — в системный браузер |
+
+### Запуск из исходников
+
+```bash
+npm install      # ставит electron, electron-builder и esbuild
+npm start        # или npm run dev — с логами
+```
+
+Нужен Node.js 20+ и рабочий звук (на Linux — PipeWire или PulseAudio).
+
+### Сборка установщиков
+
+```bash
+npm run dist:linux   # AppImage + .deb  → release/
+npm run dist:win     # NSIS-установщик + portable .exe → release/
+```
+
+Workflow [`.github/workflows/desktop.yml`](.github/workflows/desktop.yml) собирает оба
+варианта на GitHub-раннерах и прикрепляет файлы к релизу при пуше тега `v*`:
+
+```bash
+git tag v1.0.0 && git push origin v1.0.0
+```
+
+Windows-сборка не подписана — SmartScreen может показать предупреждение.
+Кросс-компиляция делается на соответствующей ОС: на Linux собирается Linux, на Windows — Windows.
+
+### Как устроено
+
+```
+electron/main.cjs      главный процесс: окна, протокол app://, IPC, разрешения
+electron/preload.cjs   мост contextBridge → window.longcallDesktop
+electron/icons/        иконки (png для окна, ico для Windows)
+js/desktop.js          обёртка над мостом + no-op для браузера
+css/desktop.css        режим обёртки: без рабочего стола, окно на весь BrowserWindow
+```
+
+Режим определяется по `navigator.userAgent` (`Electron/`) ещё в `<head>`, поэтому
+«рабочий стол» не успевает мелькнуть. В браузере `js/desktop.js` работает как
+заглушка и ничего не меняет — веб-версия остаётся прежней.
 
 ## Настройка Firebase (обязательно, один раз)
 
@@ -117,7 +178,10 @@ js/ui.js                модалки, тосты, менеджер окон, �
 js/i18n.js              словари RU/EN
 js/store.js             localStorage, cookie, утилиты
 js/config.js            конфиг Firebase, лимиты, ICE
+js/desktop.js           мост к Electron (в браузере — заглушка)
+css/desktop.css         режим настольного приложения
 vendor/firebase.js      собранный Firebase SDK (auth + database)
+electron/               обёртка для Windows и Linux
 tools/firebase-entry.js точка входа для сборки SDK
 ```
 

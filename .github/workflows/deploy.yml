@@ -28,7 +28,7 @@ jobs:
 
       - name: Validate JavaScript syntax
         run: |
-          for file in js/*.js tools/*.js; do
+          for file in js/*.js tools/*.js electron/*.cjs; do
             node --check "$file"
           done
           test -s vendor/firebase.js
@@ -42,6 +42,8 @@ jobs:
             --exclude '.github' \
             --exclude 'node_modules' \
             --exclude 'tools' \
+            --exclude 'electron' \
+            --exclude 'release' \
             --exclude 'package.json' \
             --exclude 'package-lock.json' \
             --exclude 'database.rules.json' \
