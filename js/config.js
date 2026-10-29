@@ -24,10 +24,20 @@ export const APP_SCHEME = "longcall";
 
 export const APP = {
   name: "LongCall 98",
-  version: "1.0.3",
+  version: "1.1.0",
   maxParticipants: 4,
   maxRecent: 12,
   roomCodeLength: 4,
+  // Передача файлов в звонке. Файлы лежат в Realtime Database рядом с
+  // комнатой (base64, кусками) и удаляются вместе с ней — отдельного
+  // хранилища и его настройки CORS не нужно.
+  files: {
+    maxBytes: 8 * 1024 * 1024,
+    maxFiles: 12,
+    // 96 КБ в base64 — это ~128 КБ строки: заметно меньше лимита в 10 МБ
+    // на одну запись и достаточно мелко, чтобы прогресс шёл плавно.
+    chunkBytes: 96 * 1024,
+  },
   // Звонки только звуковые: видео не запрашивается и не принимается.
   mediaConstraints: {
     audio: {

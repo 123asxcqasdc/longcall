@@ -22,6 +22,20 @@
               ".validate": "newData.hasChildren(['from', 'type', 'at'])"
             }
           }
+        },
+        "files": {
+          "$file": {
+            ".write": "auth != null",
+            ".validate": "newData.hasChildren(['name','size','from','at','parts']) && newData.child('size').val() <= 9437184 && newData.child('name').isString() && newData.child('name').val().length < 200"
+          }
+        },
+        "fileparts": {
+          "$file": {
+            ".write": "auth != null",
+            "$part": {
+              ".validate": "newData.isString() && newData.val().length < 200000"
+            }
+          }
         }
       }
     },

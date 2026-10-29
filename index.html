@@ -246,6 +246,7 @@
         <div class="dropdown">
           <button type="button" data-action="copy-link"><span data-i18n="call.copyLink">Скопировать ссылку</span></button>
           <button type="button" data-action="open-in-app" class="only-web"><span data-i18n="call.openApp">Открыть в приложении</span></button>
+          <button type="button" data-action="files"><span data-i18n="files.menu">Файлы звонка…</span></button>
           <button type="button" data-action="settings"><span data-i18n="menu.file.settings">Настройки звука…</span></button>
           <div class="sep"></div>
           <button type="button" data-action="hangup"><span data-i18n="call.hangupMenu">Завершить звонок</span></button>
@@ -302,6 +303,11 @@
           <svg class="btn-ico"><use href="#i-users"/></svg>
           <span data-i18n="call.participants">Участники</span>
         </button>
+        <button type="button" class="btn call-btn" id="btnFiles" title="Файлы звонка">
+          <svg class="btn-ico"><use href="#i-folder"/></svg>
+          <span data-i18n="call.files">Файлы</span>
+          <span class="file-badge hidden" id="filesBadge">0</span>
+        </button>
         <button type="button" class="btn call-btn" id="btnCallSettings">
           <svg class="btn-ico"><use href="#i-gear"/></svg>
           <span data-i18n="call.settings">Настройки</span>
@@ -331,7 +337,7 @@
         <svg><use href="#i-phone"/></svg>
         <div>
           <b>LongCall 98</b>
-          <small>версия 1.0.3 · Windows 9x Edition</small>
+          <small>версия 1.1.0 · Windows 9x Edition</small>
         </div>
       </div>
       <div class="progress indeterminate"><div class="progress-fill"></div></div>

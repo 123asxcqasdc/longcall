@@ -21,6 +21,9 @@ contextBridge.exposeInMainWorld("longcallDesktop", {
   dragStart: () => ipcRenderer.send("desktop:drag-start"),
   dragEnd: () => ipcRenderer.send("desktop:drag-end"),
 
+  /** Сохранить файл из звонка через системный диалог. */
+  saveFile: (payload) => ipcRenderer.invoke("desktop:save-file", payload),
+
   /** Сообщить главному процессу, что можно закрывать окно. */
   readyToClose: () => ipcRenderer.send("desktop:ready-to-close"),
 
