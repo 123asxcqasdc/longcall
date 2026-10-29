@@ -37,7 +37,8 @@
       "electron/main.cjs",
       "electron/preload.cjs",
       "electron/icons/**/*",
-      "!**/*.map"
+      "!**/*.map",
+      "electron/installer.nsh"
     ],
     "linux": {
       "target": [
@@ -73,7 +74,17 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "shortcutName": "LongCall 98",
-      "artifactName": "longcall98-${version}-setup.${ext}"
+      "artifactName": "longcall98-${version}-setup.${ext}",
+      "createStartMenuShortcut": true,
+      "installerIcon": "electron/icons/icon.ico",
+      "uninstallerIcon": "electron/icons/icon.ico",
+      "installerHeaderIcon": "electron/icons/icon.ico",
+      "deleteAppDataOnUninstall": false,
+      "include": "electron/installer.nsh",
+      "differentialPackage": false,
+      "installerSidebar": "electron/icons/installerSidebar.bmp",
+      "installerHeader": "electron/icons/installerHeader.bmp",
+      "uninstallerSidebar": "electron/icons/installerSidebar.bmp"
     },
     "portable": {
       "artifactName": "longcall98-${version}-portable.${ext}"

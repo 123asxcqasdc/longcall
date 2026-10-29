@@ -99,7 +99,9 @@ async function boot() {
   const ver = $(".splash-logo small");
   if (ver) ver.textContent = t("boot.version", { v: APP.version });
 
-  if (!isDesktop) await runBootSplash();
+  // Загрузка показывается и в браузере, и в обёртке: главный экран
+  // появляется не сразу, а после подключения аккаунта.
+  await runBootSplash();
 
   if (!audioEngine.supported) {
     finishBoot();
