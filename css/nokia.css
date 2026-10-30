@@ -1,0 +1,387 @@
+/* ============================================================
+   nokia.css — тема «Nokia»: монохромный LCD, плоские рамки
+   ============================================================
+
+   Включается атрибутом на <html>:  data-theme="nokia".
+   Файл подключается последним и ничего не меняет, пока тема
+   не выбрана, — оформление Windows 98 остаётся как было.
+
+   Принцип: сначала перекрашиваем переменные (их использует
+   почти вся вёрстка), затем точечно правим места, где цвета
+   были прописаны числами. Ничего не двигаем и не меняем
+   размеры — только цвет, рамки и шрифт, поэтому раскладка
+   не может «поехать».
+   ============================================================ */
+
+html[data-theme="nokia"] {
+  /* Шрифт: у LCD-телефонов узкие рубленые буквы, без засечек. */
+  --font-ui: "Tahoma", "Verdana", "Segoe UI", sans-serif;
+  --font-mono: "Courier New", "Lucida Console", monospace;
+
+  /* Палитра из четырёх тонов: бумага экрана, чернила, тень, акцент. */
+  --lcd-paper: #d6ebc4;
+  --lcd-paper-light: #e7f6d8;
+  --lcd-paper-bright: #f4fce9;
+  --lcd-ink: #1d2b17;
+  --lcd-ink-dim: #4a5f3d;
+  --lcd-frame: #6f8f5c;
+  --lcd-accent: #2f5d2a;
+  --lcd-accent-bright: #4c8241;
+
+  /* Старые имена, которые использует остальная вёрстка. */
+  --face: var(--lcd-paper);
+  --face-light: var(--lcd-paper-light);
+  --white: var(--lcd-paper-bright);
+  --shadow: var(--lcd-frame);
+  --dark: var(--lcd-ink);
+  --navy: var(--lcd-accent);
+  --navy-light: var(--lcd-accent-bright);
+  --teal: #a8c894;
+
+  /* Плоские «фаски» вместо объёма: одна тонкая рамка. */
+  --bevel-out: 0 0 0 1px var(--lcd-ink);
+  --bevel-in: inset 0 0 0 1px var(--lcd-ink);
+  --bevel-thin-out: 0 0 0 1px var(--lcd-ink);
+  --bevel-thin-in: inset 0 0 0 1px var(--lcd-ink);
+
+  /* Мягкое свечение экрана — только фон, без размытия текста. */
+  background: var(--lcd-paper);
+  color: var(--lcd-ink);
+
+  /* Системные элементы (галочки, ползунки, выпадающие списки) — тоже в тонах
+     экрана; на раскладку color-scheme и accent-color не влияют. */
+  color-scheme: light;
+  accent-color: var(--lcd-accent);
+}
+
+/* --------------------------- рабочий стол --------------------------- */
+
+html[data-theme="nokia"] body {
+  background: var(--lcd-paper);
+  color: var(--lcd-ink);
+}
+
+html[data-theme="nokia"] .desktop {
+  background-color: #a8c894;
+  background-image:
+    repeating-linear-gradient(0deg, rgba(29, 43, 23, 0.07) 0 1px, transparent 1px 3px),
+    linear-gradient(#b6d3a2, #9dc189);
+  background-size: auto, 100% 100%;
+}
+
+html[data-theme="nokia"] .desk-icon,
+html[data-theme="nokia"] .desk-icon-img { color: var(--lcd-ink); }
+html[data-theme="nokia"] .desk-watermark span { color: rgba(29, 43, 23, 0.35); }
+html[data-theme="nokia"] .desk-watermark small { color: rgba(29, 43, 23, 0.28); }
+
+/* ------------------------------- окна ------------------------------- */
+
+html[data-theme="nokia"] .win {
+  background: var(--lcd-paper);
+  color: var(--lcd-ink);
+  box-shadow: 0 0 0 1px var(--lcd-ink), 2px 2px 0 rgba(29, 43, 23, 0.28);
+}
+
+html[data-theme="nokia"] .titlebar {
+  background: var(--lcd-accent);
+  color: var(--lcd-paper-bright);
+  /* Вместо градиента — ровная полоса, как на экране телефона. */
+  background-image: none;
+}
+
+html[data-theme="nokia"] .win.inactive > .titlebar {
+  background: #5f7a53;
+  background-image: none;
+  color: var(--lcd-paper-bright);
+}
+
+html[data-theme="nokia"] .titlebar-text { letter-spacing: 0.02em; }
+
+html[data-theme="nokia"] .tb-btn {
+  background: var(--lcd-paper);
+  box-shadow: 0 0 0 1px var(--lcd-ink);
+  color: var(--lcd-ink);
+}
+html[data-theme="nokia"] .tb-btn::before,
+html[data-theme="nokia"] .tb-btn::after { background: var(--lcd-ink); }
+html[data-theme="nokia"] .tb-max::before { border-color: var(--lcd-ink); }
+html[data-theme="nokia"] .tb-btn:active { background: var(--lcd-paper-light); }
+html[data-theme="nokia"] .tb-close::before,
+html[data-theme="nokia"] .tb-close::after { background: #7a1f1f; }
+
+/* ------------------------------ меню -------------------------------- */
+
+html[data-theme="nokia"] .menubar { background: var(--lcd-paper); color: var(--lcd-ink); }
+html[data-theme="nokia"] .menu.open > .menu-btn {
+  background: var(--lcd-accent);
+  color: var(--lcd-paper-bright);
+}
+html[data-theme="nokia"] .dropdown {
+  background: var(--lcd-paper);
+  color: var(--lcd-ink);
+  box-shadow: 0 0 0 1px var(--lcd-ink), 2px 2px 0 rgba(29, 43, 23, 0.3);
+}
+html[data-theme="nokia"] .dropdown button { color: var(--lcd-ink); }
+html[data-theme="nokia"] .dropdown button:hover {
+  background: var(--lcd-accent);
+  color: var(--lcd-paper-bright);
+}
+html[data-theme="nokia"] .dropdown .sep,
+html[data-theme="nokia"] .startmenu .sep { border-color: var(--lcd-frame); }
+
+/* ----------------------------- кнопки ------------------------------- */
+
+html[data-theme="nokia"] .btn {
+  background: var(--lcd-paper);
+  color: var(--lcd-ink);
+  box-shadow: 0 0 0 1px var(--lcd-ink);
+}
+html[data-theme="nokia"] .btn:hover:not(:disabled) { background: var(--lcd-paper-light); }
+html[data-theme="nokia"] .btn:active:not(:disabled) {
+  background: var(--lcd-accent);
+  color: var(--lcd-paper-bright);
+}
+html[data-theme="nokia"] .btn:disabled { color: var(--lcd-ink-dim); }
+html[data-theme="nokia"] .btn-hangup { color: #7a1f1f; }
+html[data-theme="nokia"] .btn-hangup:active:not(:disabled) { color: var(--lcd-paper-bright); }
+
+/* --------------------------- поля и списки --------------------------- */
+
+html[data-theme="nokia"] input.input,
+html[data-theme="nokia"] select.input,
+html[data-theme="nokia"] textarea.input,
+html[data-theme="nokia"] .listbox,
+html[data-theme="nokia"] .progress,
+html[data-theme="nokia"] .checkbox .box,
+html[data-theme="nokia"] .code-strip span,
+html[data-theme="nokia"] .text-block,
+html[data-theme="nokia"] .meter,
+html[data-theme="nokia"] .room-badge,
+html[data-theme="nokia"] .file-list,
+html[data-theme="nokia"] .preview-figure,
+html[data-theme="nokia"] .preview-text,
+html[data-theme="nokia"] .call-log,
+html[data-theme="nokia"] .chat-list {
+  background: var(--lcd-paper-bright);
+  color: var(--lcd-ink);
+}
+
+html[data-theme="nokia"] .text-block { color: var(--lcd-ink); }
+
+html[data-theme="nokia"] .list-row.sel {
+  background: var(--lcd-accent);
+  color: var(--lcd-paper-bright);
+}
+html[data-theme="nokia"] .list-row.sel .dim { color: #d9ecc6; }
+html[data-theme="nokia"] .dim,
+html[data-theme="nokia"] .small-dim,
+html[data-theme="nokia"] .progress-text,
+html[data-theme="nokia"] .room-label,
+html[data-theme="nokia"] .participants-count,
+html[data-theme="nokia"] .tile-state,
+html[data-theme="nokia"] .tile-conn,
+html[data-theme="nokia"] .splash-foot,
+html[data-theme="nokia"] .empty-state,
+html[data-theme="nokia"] .toast span,
+html[data-theme="nokia"] .tile-waiting { color: var(--lcd-ink-dim); }
+
+html[data-theme="nokia"] .progress { box-shadow: inset 0 0 0 1px var(--lcd-ink); }
+html[data-theme="nokia"] .progress-bar { background: var(--lcd-paper-bright); }
+html[data-theme="nokia"] .progress-fill { background-color: var(--lcd-accent); }
+html[data-theme="nokia"] .progress.indeterminate .progress-fill::before {
+  background-image: repeating-linear-gradient(
+    90deg,
+    var(--lcd-accent) 0 8px,
+    transparent 8px 16px
+  );
+}
+
+html[data-theme="nokia"] .checkbox input:checked + .box { background: var(--lcd-accent); }
+
+/* ------------------------------ звонок ------------------------------ */
+
+html[data-theme="nokia"] .tile {
+  background: var(--lcd-paper-light);
+  box-shadow: 0 0 0 1px var(--lcd-frame);
+}
+html[data-theme="nokia"] .tile.speaking {
+  background: #eefbe0;
+  box-shadow: 0 0 0 2px var(--lcd-accent);
+}
+html[data-theme="nokia"] .level { background: var(--lcd-paper-bright); }
+html[data-theme="nokia"] .level i { background: #357a2f; }
+html[data-theme="nokia"] .level.muted i { background: #a4b59a; }
+html[data-theme="nokia"] .tile-self { color: var(--lcd-accent); }
+
+html[data-theme="nokia"] .call-log {
+  box-shadow: inset 0 0 0 1px var(--lcd-frame);
+}
+html[data-theme="nokia"] .call-log .ok { color: #2a6b23; }
+html[data-theme="nokia"] .call-log .warn { color: #6b5300; }
+html[data-theme="nokia"] .call-log .err { color: #8b1a1a; }
+
+html[data-theme="nokia"] .call-btn.on {
+  background: var(--lcd-accent);
+  color: var(--lcd-paper-bright);
+  box-shadow: none;
+}
+
+html[data-theme="nokia"] .file-badge,
+html[data-theme="nokia"] .chat-badge {
+  color: var(--lcd-paper-bright);
+  background: var(--lcd-accent);
+  box-shadow: 0 0 0 1px var(--lcd-ink);
+}
+html[data-theme="nokia"] .file-badge.hidden,
+html[data-theme="nokia"] .chat-badge.hidden { display: none; }
+
+html[data-theme="nokia"] .file-name.is-previewable:hover { color: var(--lcd-accent); }
+html[data-theme="nokia"] .file-ico { color: #6b5300; }
+html[data-theme="nokia"] .file-ico.kind-video { color: var(--lcd-accent); }
+html[data-theme="nokia"] .file-ico.kind-audio { color: #5a2d6b; }
+html[data-theme="nokia"] .file-ico.kind-text { color: var(--lcd-ink-dim); }
+html[data-theme="nokia"] .file-row + .file-row { box-shadow: inset 0 1px 0 #c3d9b2; }
+html[data-theme="nokia"] .preview-media { background: #101a0c; }
+html[data-theme="nokia"] .preview-error { color: #8b1a1a; }
+
+/* ------------------------- чат, статус, панель ------------------------ */
+
+html[data-theme="nokia"] .chat-list { box-shadow: inset 0 0 0 1px var(--lcd-frame); }
+html[data-theme="nokia"] .chat-msg + .chat-msg { box-shadow: inset 0 1px 0 #c3d9b2; }
+html[data-theme="nokia"] .chat-nick { color: var(--lcd-accent); }
+html[data-theme="nokia"] .chat-time { color: var(--lcd-ink-dim); }
+html[data-theme="nokia"] .chat-mine .chat-nick { color: #5a2d6b; }
+
+html[data-theme="nokia"] .statusbar,
+html[data-theme="nokia"] .status-cell { color: var(--lcd-ink); }
+html[data-theme="nokia"] .statusbar { box-shadow: inset 0 1px 0 var(--lcd-frame); }
+
+html[data-theme="nokia"] .taskbar {
+  background: var(--lcd-paper);
+  box-shadow: 0 -1px 0 var(--lcd-frame);
+}
+html[data-theme="nokia"] .tray-btn { color: var(--lcd-ink); }
+html[data-theme="nokia"] .startmenu-side {
+  background: var(--lcd-accent);
+  background-image: none;
+  color: var(--lcd-paper-light);
+}
+html[data-theme="nokia"] .task-btn { color: var(--lcd-ink); }
+
+/* ---------------------------- модалки, тосты ------------------------ */
+
+html[data-theme="nokia"] .modal-layer { background: rgba(18, 30, 14, 0.42); }
+html[data-theme="nokia"] .modal {
+  background: var(--lcd-paper);
+  box-shadow: 0 0 0 1px var(--lcd-ink), 3px 3px 0 rgba(18, 30, 14, 0.35);
+}
+html[data-theme="nokia"] .modal-body { color: var(--lcd-ink); }
+html[data-theme="nokia"] .toast {
+  background: var(--lcd-paper);
+  color: var(--lcd-ink);
+  box-shadow: 0 0 0 1px var(--lcd-ink);
+}
+html[data-theme="nokia"] .toast.err { box-shadow: 0 0 0 1px #8b1a1a; }
+html[data-theme="nokia"] .toast.err svg { color: #8b1a1a; }
+
+/* --------------------------- загрузка, аватары ---------------------- */
+
+html[data-theme="nokia"] .splash-logo > svg,
+html[data-theme="nokia"] .hero-logo,
+html[data-theme="nokia"] .hero-logo svg { color: var(--lcd-accent); }
+html[data-theme="nokia"] .splash .progress { box-shadow: inset 0 0 0 1px var(--lcd-ink); }
+
+/* Аватар: фон задаётся из JS тёмным цветом, поэтому текст оставляем светлым. */
+html[data-theme="nokia"] .avatar { color: var(--lcd-paper-bright); }
+
+html[data-theme="nokia"] ::-webkit-scrollbar { background: var(--lcd-paper-light); }
+html[data-theme="nokia"] ::-webkit-scrollbar-thumb {
+  background: var(--lcd-frame);
+  box-shadow: inset 0 0 0 1px var(--lcd-ink);
+}
+html[data-theme="nokia"] ::-webkit-scrollbar-thumb:active { background: var(--lcd-accent); }
+
+/* ============================================================
+   Доводка: места, где в базовых стилях цвета прописаны числами,
+   а не переменными. Только цвет, рамки и шрифт — раскладка та же,
+   поэтому тема не может «съехать».
+   ============================================================ */
+
+/* Серые оттенки Windows на зелёном экране смотрятся грязно. */
+html[data-theme="nokia"] .splash-logo small,
+html[data-theme="nokia"] .hero-text .hero-hint,
+html[data-theme="nokia"] .profile-uid,
+html[data-theme="nokia"] .modal-hint,
+html[data-theme="nokia"] .field small,
+html[data-theme="nokia"] .chat-empty,
+html[data-theme="nokia"] .drop-box small,
+html[data-theme="nokia"] .tray-btn.off,
+html[data-theme="nokia"] .recent-badge.dead { color: var(--lcd-ink-dim); }
+html[data-theme="nokia"] .empty-state b,
+html[data-theme="nokia"] .tile-waiting b { color: var(--lcd-ink); }
+
+/* Фокус: вместо чёрного пунктира — чернильный. */
+html[data-theme="nokia"] :focus-visible { outline: 1px dotted var(--lcd-ink); }
+html[data-theme="nokia"] .checkbox input:focus-visible + .box { outline: 1px dotted var(--lcd-ink); }
+
+/* Подсветка пунктов меню: белый текст на зелёном, как на LCD. */
+html[data-theme="nokia"] .menu-btn:hover,
+html[data-theme="nokia"] .sm-item:hover { color: var(--lcd-paper-bright); }
+
+/* Поле ввода как класс, а не тег (на нём бывают div). */
+html[data-theme="nokia"] .input {
+  background: var(--lcd-paper-bright);
+  color: var(--lcd-ink);
+  box-shadow: inset 0 0 0 1px var(--lcd-ink);
+}
+
+/* Галочка: светлая птичка на зелёном квадрате. */
+html[data-theme="nokia"] .checkbox input:checked + .box::after {
+  background:
+    linear-gradient(45deg, transparent 40%, var(--lcd-paper-bright) 40%, var(--lcd-paper-bright) 52%, transparent 52%),
+    linear-gradient(-45deg, transparent 52%, var(--lcd-paper-bright) 52%, var(--lcd-paper-bright) 64%, transparent 64%);
+}
+
+/* Полоса прокрутки: в базе на дорожке шахматка из белых клеток. */
+html[data-theme="nokia"] ::-webkit-scrollbar-track {
+  background: var(--lcd-paper-light);
+  background-image: none;
+  box-shadow: none;
+}
+
+/* Кнопка активной задачи: та же «шахматка», но в тонах экрана. */
+html[data-theme="nokia"] .task-btn.active {
+  background-image: repeating-conic-gradient(var(--lcd-paper-bright) 0% 25%, var(--lcd-paper-light) 0% 50%);
+}
+
+/* Эмблема в меню «Пуск»: четыре квадрата в четырёх тонах экрана. */
+html[data-theme="nokia"] .start-logo i { background: #2f5d2a; }
+html[data-theme="nokia"] .start-logo i:nth-child(2) { background: #4c8241; }
+html[data-theme="nokia"] .start-logo i:nth-child(3) { background: #6f8f5c; }
+html[data-theme="nokia"] .start-logo i:nth-child(4) { background: #1d2b17; }
+
+/* Состояния: «подключается», ошибки, микрофон, индикатор уровня. */
+html[data-theme="nokia"] .tile[data-state="connecting"] .tile-conn { color: var(--lcd-accent); }
+html[data-theme="nokia"] .tile[data-state="failed"] .tile-conn { color: #8b1a1a; }
+html[data-theme="nokia"] .participant-line .mic-ind,
+html[data-theme="nokia"] .participant-line .mic-ind.on,
+html[data-theme="nokia"] .recent-badge.live { color: #2a6b23; }
+html[data-theme="nokia"] .participant-line .mic-ind.off { color: #8b1a1a; }
+html[data-theme="nokia"] .form-error { color: #7a1f1f; }
+html[data-theme="nokia"] .list-row.sel .recent-badge { color: #d9ecc6; }
+
+html[data-theme="nokia"] .meter i { background: #357a2f; }
+html[data-theme="nokia"] .meter i:nth-child(n + 8) { background: #6b5300; }
+html[data-theme="nokia"] .meter i:nth-child(n + 12) { background: #8b1a1a; }
+
+/* Отправка файлов: подложка, рамка, иконка. */
+html[data-theme="nokia"] .drop-overlay { background: rgba(18, 30, 14, 0.3); }
+html[data-theme="nokia"] .upload-bar,
+html[data-theme="nokia"] .drop-box {
+  background: var(--lcd-paper);
+  color: var(--lcd-ink);
+  box-shadow: 0 0 0 1px var(--lcd-ink);
+}
+html[data-theme="nokia"] .drop-ico { color: var(--lcd-accent); }
+
+/* Мобильная раскладка использует те же переменные, отдельных правок не нужно. */

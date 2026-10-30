@@ -14,6 +14,7 @@ import { CallSession } from "./call.js";
 import { resolveIceServers, resetIceCache } from "./turn.js";
 import { CallDiagnostics } from "./diagnostics.js";
 import { RoomFiles, formatSize, previewKind } from "./files.js";
+import { RoomChat, cleanMessage, shortTime } from "./chat.js";
 import { CallView } from "./callui.js";
 import {
   $,
@@ -43,6 +44,9 @@ import {
   randomRoomCode,
   normalizeRoomCode,
   colorFor,
+  getTheme,
+  setTheme,
+  normalizeTheme,
 } from "./store.js";
 import {
   signInLocal,
@@ -78,6 +82,10 @@ const state = {
   // передача файлов в текущем звонке
   files: null,
   filesList: [],
+  // чат текущего звонка
+  chat: null,
+  chatOpen: false,
+  chatUnread: 0,
 };
 
 const callView = new CallView();
@@ -95,6 +103,7 @@ let lastReport = null;
    ========================================================================= */
 
 async function boot() {
+  applyTheme(getTheme());
   initLang();
   document.documentElement.lang = getLang();
   applyI18n();
@@ -755,6 +764,27 @@ async function openCall(code) {
   updateFilesBadge();
   files.watch();
 
+  // Чат комнаты: короткие сообщения на случай, когда микрофон недоступен
+  // или говорить неудобно.
+  const chat = new RoomChat({
+    code,
+    me: { uid: state.uid, nick: state.nick },
+    diagnostics,
+    onList: (list) => renderChat(list),
+    onNew: (message) => {
+      if (state.chatOpen) return;
+      state.chatUnread += 1;
+      updateChatBadge();
+      audioEngine.playSound("message").catch(() => {});
+    },
+    onError: () => callView.log(t("chat.err.watch"), "warn"),
+  });
+  state.chat = chat;
+  state.chatUnread = 0;
+  chat.watch();
+  renderChat([]);
+  updateChatBadge();
+
   try {
     await session.join();
     callView.startTimer();
@@ -839,12 +869,18 @@ function updateCallWindowTitle() {
 async function hangup({ silent = false } = {}) {
   const session = state.session;
   state.session = null;
-  // Подписку на файлы снимаем сразу: комната сейчас закроется.
+  // Подписки снимаем сразу: комната сейчас закроется.
   state.files?.stop();
   state.files = null;
   state.filesList = [];
   filesUi = null;
   updateFilesBadge();
+
+  state.chat?.stop();
+  state.chat = null;
+  state.chatOpen = false;
+  state.chatUnread = 0;
+  closeChatPanel();
   state.activeCode = "";
   callView.stop();
   wm?.close("call");
@@ -1546,6 +1582,273 @@ function fileRow(entry) {
   return row;
 }
 
+/* ============================== чат звонка ============================== */
+
+function updateChatBadge() {
+  const count = state.chatUnread || 0;
+  const badge = $("#chatBadge");
+  if (badge) {
+    badge.textContent = String(count);
+    badge.classList.toggle("hidden", count === 0);
+  }
+  const btn = $("#btnChat");
+  if (btn) {
+    btn.title = count ? t("chat.unread", { n: count }) : t("chat.title");
+    btn.classList.toggle("on", Boolean(state.chatOpen));
+  }
+}
+
+function closeChatPanel() {
+  state.chatOpen = false;
+  $("#callChat")?.classList.add("hidden");
+  $("#callBottom")?.classList.remove("chat-open");
+  $("#btnChat")?.classList.remove("on");
+}
+
+/** Открывает или закрывает панель чата (закрытая панель — журнал звонка). */
+function toggleChat(force) {
+  // Вне звонка чата нет — кнопка просто ничего не делает.
+  if (!state.chat) return;
+  const open = typeof force === "boolean" ? force : !state.chatOpen;
+  state.chatOpen = open;
+  $("#callChat")?.classList.toggle("hidden", !open);
+  $("#callBottom")?.classList.toggle("chat-open", open);
+  $("#btnChat")?.classList.toggle("on", open);
+
+  if (open) {
+    state.chatUnread = 0;
+    updateChatBadge();
+    renderChat(state.chat.messages || []);
+    const list = $("#chatList");
+    if (list) list.scrollTop = list.scrollHeight;
+    setTimeout(() => $("#chatInput")?.focus(), 30);
+  }
+}
+
+/** Перерисовывает список сообщений. Живёт только в окне звонка. */
+function renderChat(list) {
+  const root = $("#chatList");
+  if (!root) return;
+  const messages = Array.isArray(list) ? list : [];
+  const lang = getLang();
+  root.textContent = "";
+
+  if (!messages.length) {
+    root.append(el("div", { class: "chat-empty", text: t("chat.empty") }));
+    return;
+  }
+
+  for (const message of messages.slice(-APP.chat.maxMessages)) {
+    const row = el("div", {
+      class: `chat-msg${message.from === state.uid ? " chat-mine" : ""}`,
+    });
+    row.append(el("span", { class: "chat-time", text: shortTime(message.at, lang) }));
+    row.append(el("span", { class: "chat-nick", text: message.from === state.uid ? t("common.you") : message.nick || "…" }));
+    row.append(el("span", { class: "chat-text", text: message.text }));
+    root.append(row);
+  }
+  root.scrollTop = root.scrollHeight;
+}
+
+async function sendChatMessage() {
+  const input = $("#chatInput");
+  const chat = state.chat;
+  if (!input || !chat) return;
+  const text = cleanMessage(input.value);
+  if (!text) return;
+  input.value = "";
+  try {
+    await chat.send(text);
+  } catch (err) {
+    if (err?.code === "chatTooFast") {
+      // Не теряем текст: возвращаем его в поле, чтобы человек отправил снова.
+      if (!input.value) input.value = text;
+      toast({ title: t("chat.tooFast"), icon: "i-warn", tone: "error", timeout: 2200 });
+      return;
+    }
+    toast({ title: t("err.title"), text: errorText(err), icon: "i-warn", tone: "error" });
+  }
+}
+
+/* ============================ тема оформления =========================== */
+
+function syncThemeChecks() {
+  const current = getTheme();
+  document.querySelectorAll("[data-theme-check]").forEach((node) => {
+    node.textContent = node.dataset.themeCheck === current ? "✓" : "";
+  });
+}
+
+/** Переключает оформление и запоминает выбор. Без перезагрузки страницы. */
+function applyTheme(theme, { announce = false } = {}) {
+  const next = normalizeTheme(theme);
+  setTheme(next);
+  if (next === "nokia") document.documentElement.dataset.theme = "nokia";
+  else delete document.documentElement.dataset.theme;
+  syncThemeChecks();
+  if (announce) {
+    toast({
+      title: next === "nokia" ? t("theme.nokiaOn") : t("theme.win98On"),
+      icon: "i-gear",
+      timeout: 2000,
+    });
+  }
+}
+
+/* ==================== файлы из буфера и перетаскиванием ================= */
+
+let uploadQueue = [];
+let uploading = false;
+
+function showUploadBar(text) {
+  const bar = $("#uploadBar");
+  if (!bar) return;
+  bar.classList.remove("hidden");
+  const label = $("#uploadText");
+  if (label && text) label.textContent = text;
+}
+
+function setUploadProgress(percent) {
+  const fill = $("#uploadFill");
+  if (fill) fill.style.setProperty("--p", `${Math.max(0, Math.min(100, percent))}%`);
+}
+
+function hideUploadBar() {
+  $("#uploadBar")?.classList.add("hidden");
+  setUploadProgress(0);
+}
+
+function hasFilePayload(event) {
+  const types = event?.dataTransfer?.types;
+  if (!types) return false;
+  return Array.from(types).includes("Files");
+}
+
+/** Достаёт файлы из clipboardData / dataTransfer, не трогая обычный текст. */
+function filesFromTransfer(data) {
+  if (!data) return [];
+  if (data.files && data.files.length) return Array.from(data.files);
+  const out = [];
+  if (data.items) {
+    for (const item of Array.from(data.items)) {
+      if (item.kind !== "file") continue;
+      const file = item.getAsFile?.();
+      if (file) out.push(file);
+    }
+  }
+  return out;
+}
+
+/**
+ * Ставит файлы в очередь и отправляет по одному: одновременно можно
+ * загружать только один файл, поэтому очередь честно ждёт предыдущий.
+ */
+async function uploadFiles(files) {
+  if (!state.files) {
+    toast({ title: t("err.room"), icon: "i-warn", tone: "error" });
+    return;
+  }
+  const list = Array.from(files || []).filter(Boolean);
+  if (!list.length) return;
+
+  uploadQueue.push(...list);
+  if (uploading) return;
+
+  uploading = true;
+  try {
+    while (uploadQueue.length) {
+      const file = uploadQueue.shift();
+      const problem = state.files.canSend(file);
+      if (problem) {
+        toast({ title: t("err.title"), text: errorText(problem), icon: "i-warn", tone: "error" });
+        continue;
+      }
+      const name = file.name || t("files.one");
+      showUploadBar(t("files.uploading", { name }));
+      setUploadProgress(0);
+      try {
+        const sent = await state.files.send(file, {
+          onProgress: ({ sent: done, total }) => {
+            const percent = total ? Math.round((done / total) * 100) : 0;
+            setUploadProgress(percent);
+            showUploadBar(t("files.uploadingProgress", { name, p: percent }));
+          },
+        });
+        callView.log(t("files.log.sent", { name: sent.name }), "ok");
+        toast({
+          title: t("files.sent"),
+          text: `${sent.name} · ${formatSize(sent.size)}`,
+          icon: "i-folder",
+        });
+      } catch (err) {
+        if (err?.code === "fileCancelled") {
+          toast({ title: t("files.cancelled"), icon: "i-warn", timeout: 2200 });
+          uploadQueue = [];
+          break;
+        }
+        toast({ title: t("err.title"), text: errorText(err), icon: "i-warn", tone: "error" });
+      }
+    }
+  } finally {
+    uploading = false;
+    uploadQueue = [];
+    hideUploadBar();
+    const cancel = $("#uploadCancel");
+    if (cancel) cancel.disabled = false;
+  }
+}
+
+/** Ctrl+V с картинкой/файлом и перетаскивание файлов в окно звонка. */
+function setupTransfers() {
+  document.addEventListener("paste", (event) => {
+    if (!state.files) return;
+    const files = filesFromTransfer(event.clipboardData);
+    // Текст вставляется как обычно: перехватываем только файлы.
+    if (!files.length) return;
+    event.preventDefault();
+    uploadFiles(files);
+  });
+
+  let depth = 0;
+  const show = () => $("#dropOverlay")?.classList.remove("hidden");
+  const hide = () => {
+    depth = 0;
+    $("#dropOverlay")?.classList.add("hidden");
+  };
+
+  window.addEventListener("dragenter", (event) => {
+    if (!state.files || !hasFilePayload(event)) return;
+    event.preventDefault();
+    depth += 1;
+    show();
+  });
+  window.addEventListener("dragover", (event) => {
+    if (!state.files || !hasFilePayload(event)) return;
+    // Без preventDefault браузер откроет файл вместо отправки.
+    event.preventDefault();
+    show();
+  });
+  window.addEventListener("dragleave", (event) => {
+    if (!state.files) return;
+    depth = Math.max(0, depth - 1);
+    if (depth === 0 || event.relatedTarget === null) hide();
+  });
+  window.addEventListener("drop", (event) => {
+    if (!state.files) return;
+    const hadFiles = hasFilePayload(event);
+    hide();
+    if (!hadFiles) return;
+    event.preventDefault();
+    uploadFiles(filesFromTransfer(event.dataTransfer));
+  });
+
+  $("#uploadCancel")?.addEventListener("click", () => {
+    state.files?.cancel();
+    const btn = $("#uploadCancel");
+    if (btn) btn.disabled = true;
+  });
+}
+
 /** Окно «Файлы звонка»: список, отправка с прогрессом и отменой. */
 function openFiles() {
   const files = state.files;
@@ -1781,6 +2084,15 @@ async function handleAction(action) {
     case "files":
       openFiles();
       break;
+    case "chat":
+      toggleChat();
+      break;
+    case "theme-98":
+      applyTheme("win98", { announce: true });
+      break;
+    case "theme-nokia":
+      applyTheme("nokia", { announce: true });
+      break;
     case "hangup":
       if (state.session) hangup();
       break;
@@ -1928,6 +2240,11 @@ function setupChrome() {
   $("#btnMic")?.addEventListener("click", toggleMic);
   $("#btnParticipants")?.addEventListener("click", openParticipants);
   $("#btnFiles")?.addEventListener("click", openFiles);
+  $("#btnChat")?.addEventListener("click", toggleChat);
+  $("#chatForm")?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    sendChatMessage();
+  });
   $("#btnCallSettings")?.addEventListener("click", openSettings);
   $("#btnHangup")?.addEventListener("click", () => hangup());
   $("#btnCopyLink")?.addEventListener("click", copyRoomLink);
@@ -1957,6 +2274,10 @@ function setupChrome() {
   };
   tick();
   setInterval(tick, 15_000);
+
+  // Ctrl+V / перетаскивание файлов в звонок
+  setupTransfers();
+  syncThemeChecks();
 
   // разблокировка аудиоконтекста первым жестом
   const unlock = () => audioEngine.unlock();
@@ -1992,6 +2313,8 @@ function setupChrome() {
     callView.refreshLabels();
     updateFilesBadge();
     filesUi?.refreshLabels();
+    updateChatBadge();
+    renderChat(state.chat?.messages || []);
     renderProfile();
     updateHomeStatus();
     updateMicCell();

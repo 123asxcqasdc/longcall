@@ -75,6 +75,7 @@ const DICT = {
     "call.unmutedToast": "Микрофон включён",
     "call.participants": "Участники",
     "call.files": "Файлы",
+    "call.chat": "Чат",
     "call.settings": "Настройки",
     "call.hangup": "Завершить",
     "call.hangupMenu": "Завершить звонок",
@@ -187,6 +188,27 @@ const DICT = {
     "modal.readme.title": "readme.txt",
     "modal.readme.body": "LONGCALL 98 — КАК ЭТО РАБОТАЕТ\n\n1. Введите имя — аккаунт создастся локально.\n2. Нажмите «Создать звонок» или введите код комнаты.\n3. Отправьте друзьям код или ссылку.\n4. Разрешите браузеру доступ к микрофону.\n5. Говорите: до 4 человек в комнате.\n\nЗвук идёт напрямую между участниками,\nFirebase передаёт только служебные сообщения.\n\nСовет: наушники уменьшают эхо.\n\nФайлы в звонке: кнопка «Файлы» на панели.\nФайлы хранятся в Firebase и удаляются,\nкогда комната закрывается.",
 
+    "chat.title": "Чат звонка",
+    "chat.menu": "Чат звонка",
+    "chat.placeholder": "Сообщение…",
+    "chat.send": "Отправить",
+    "chat.empty": "Пока тихо. Напишите что-нибудь — увидят все в звонке.",
+    "chat.unread": "Чат звонка: {n} новых",
+    "chat.tooFast": "Слишком часто. Секунду и отправляйте.",
+    "chat.err.watch": "Чат недоступен — проверьте правила базы",
+    "err.chatEmpty": "Пустое сообщение отправлять нечего.",
+    "err.chatClosed": "Звонок уже завершён.",
+    "err.chatTooFast": "Слишком часто: одно сообщение в секунду.",
+    "err.chatRules": "Firebase отклонил сообщение. Проверьте правила Realtime Database.",
+    "err.chatFailed": "Сообщение не отправилось. Проверьте интернет. {msg}",
+    "err.chatDenied": "Не удалось подключиться к чату. Проверьте правила Realtime Database.",
+    "drop.title": "Отпустите, чтобы отправить в звонок",
+    "drop.hint": "Файл увидят все участники",
+    "theme.nokiaOn": "Оформление: Nokia",
+    "theme.win98On": "Оформление: Windows 98",
+    "menu.view.theme98": "Оформление: Windows 98",
+    "menu.view.themeNokia": "Оформление: Nokia",
+    "files.one": "файл",
     "files.title": "Файлы звонка",
     "files.menu": "Файлы звонка…",
     "files.send": "Отправить файл…",
@@ -340,6 +362,7 @@ const DICT = {
     "call.unmutedToast": "Microphone on",
     "call.participants": "People",
     "call.files": "Files",
+    "call.chat": "Chat",
     "call.settings": "Settings",
     "call.hangup": "Hang up",
     "call.hangupMenu": "End call",
@@ -452,6 +475,27 @@ const DICT = {
     "modal.readme.title": "readme.txt",
     "modal.readme.body": "LONGCALL 98 — HOW IT WORKS\n\n1. Enter a name — the account is created locally.\n2. Press “Start a call” or type a room code.\n3. Send the code or the link to your friends.\n4. Allow microphone access in the browser.\n5. Talk: up to 4 people per room.\n\nSound goes directly between people;\nFirebase carries signalling messages only.\n\nTip: headphones reduce echo.\n\nFiles in a call: the “Files” button on the panel.\nFiles live in Firebase and are deleted when\nthe room closes.",
 
+    "chat.title": "Call chat",
+    "chat.menu": "Call chat",
+    "chat.placeholder": "Message…",
+    "chat.send": "Send",
+    "chat.empty": "Quiet so far. Write something — everyone in the call will see it.",
+    "chat.unread": "Call chat: {n} new",
+    "chat.tooFast": "Too fast. Give it a second.",
+    "chat.err.watch": "Chat is unavailable — check the database rules",
+    "err.chatEmpty": "There is nothing to send — the message is empty.",
+    "err.chatClosed": "The call is already over.",
+    "err.chatTooFast": "Too fast: one message per second.",
+    "err.chatRules": "Firebase rejected the message. Check the Realtime Database rules.",
+    "err.chatFailed": "The message was not sent. Check the network. {msg}",
+    "err.chatDenied": "Could not connect to the chat. Check the Realtime Database rules.",
+    "drop.title": "Drop to send to the call",
+    "drop.hint": "Everyone in the call will see the file",
+    "theme.nokiaOn": "Theme: Nokia",
+    "theme.win98On": "Theme: Windows 98",
+    "menu.view.theme98": "Theme: Windows 98",
+    "menu.view.themeNokia": "Theme: Nokia",
+    "files.one": "file",
     "files.title": "Call files",
     "files.menu": "Call files…",
     "files.send": "Send a file…",
@@ -594,6 +638,9 @@ export function applyI18n(root = document) {
   });
   root.querySelectorAll("[data-i18n-label]").forEach((el) => {
     el.setAttribute("aria-label", t(el.dataset.i18nLabel));
+  });
+  root.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
+    el.setAttribute("placeholder", t(el.dataset.i18nPlaceholder));
   });
 }
 

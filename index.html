@@ -14,10 +14,18 @@
   if (navigator.userAgent.indexOf("Electron/") !== -1) {
     document.documentElement.classList.add("is-desktop");
   }
+  // Тема из localStorage ставится до загрузки стилей: иначе при «Nokia»
+  // на мгновение мелькал бы синий рабочий стол Windows 98.
+  try {
+    if (String(localStorage.getItem("lc.theme") || "").trim().toLowerCase() === "nokia") {
+      document.documentElement.dataset.theme = "nokia";
+    }
+  } catch (e) {}
 </script>
 <link rel="stylesheet" href="css/win98.css">
 <link rel="stylesheet" href="css/app.css">
 <link rel="stylesheet" href="css/desktop.css">
+<link rel="stylesheet" href="css/nokia.css">
 </head>
 <body class="is-booting">
 
@@ -70,6 +78,10 @@
       <path d="M2.6 1.6h8.2l2.6 2.6v10.2H2.6z" fill="#fff" stroke="#404040" stroke-width="1"/>
       <path d="M10.4 1.8v2.8h2.8" fill="none" stroke="#404040" stroke-width="1"/>
       <path d="M4.4 6.6h7.2M4.4 8.6h7.2M4.4 10.6h4.6" stroke="#606060" stroke-width="1"/>
+    </symbol>
+    <symbol id="i-chat" viewBox="0 0 16 16">
+      <path d="M1.8 2.6h12.4v8.2H7.4L4.2 13.8v-3H1.8z" fill="#fff" stroke="#404040" stroke-width="1"/>
+      <path d="M4.4 5.6h7.2M4.4 7.4h5" stroke="#505050" stroke-width="1"/>
     </symbol>
     <symbol id="i-image" viewBox="0 0 16 16">
       <rect x="1.4" y="2.4" width="13.2" height="11.2" fill="#fff" stroke="#404040" stroke-width="1"/>
@@ -183,6 +195,9 @@
           <button type="button" data-action="toggle-sound"><span data-i18n="menu.view.sound">Звуки системы</span><span class="menu-check" id="menuSoundCheck">✓</span></button>
           <div class="sep"></div>
           <button type="button" data-action="toggle-lang"><span data-i18n="menu.view.lang">Язык: Русский</span></button>
+          <div class="sep"></div>
+          <button type="button" data-action="theme-98"><span data-i18n="menu.view.theme98">Оформление: Windows 98</span><span class="menu-check theme-check" data-theme-check="win98">✓</span></button>
+          <button type="button" data-action="theme-nokia"><span data-i18n="menu.view.themeNokia">Оформление: Nokia</span><span class="menu-check theme-check" data-theme-check="nokia"></span></button>
         </div>
       </div>
       <div class="menu">
@@ -275,6 +290,15 @@
         </div>
       </div>
       <div class="menu">
+        <button type="button" class="menu-btn" data-i18n="menu.view">Вид</button>
+        <div class="dropdown">
+          <button type="button" data-action="chat"><span data-i18n="chat.menu">Чат звонка</span></button>
+          <div class="sep"></div>
+          <button type="button" data-action="theme-98"><span data-i18n="menu.view.theme98">Оформление: Windows 98</span><span class="menu-check theme-check" data-theme-check="win98">✓</span></button>
+          <button type="button" data-action="theme-nokia"><span data-i18n="menu.view.themeNokia">Оформление: Nokia</span><span class="menu-check theme-check" data-theme-check="nokia"></span></button>
+        </div>
+      </div>
+      <div class="menu">
         <button type="button" class="menu-btn" data-i18n="menu.help">Справка</button>
         <div class="dropdown">
           <button type="button" data-action="about"><span data-i18n="menu.help.about">О программе…</span></button>
@@ -308,7 +332,14 @@
 
       <div class="tiles" id="callTiles"></div>
 
-      <div class="call-bottom">
+      <div class="call-bottom" id="callBottom">
+        <div class="call-chat hidden" id="callChat">
+          <div class="chat-list" id="chatList" aria-live="polite"></div>
+          <form class="chat-form" id="chatForm" autocomplete="off">
+            <input type="text" class="input chat-input" id="chatInput" maxlength="500" data-i18n-placeholder="chat.placeholder" placeholder="Сообщение…" />
+            <button type="submit" class="btn btn-sm" id="chatSend" data-i18n="chat.send">Отправить</button>
+          </form>
+        </div>
         <div class="call-log" id="callLog" aria-live="polite"></div>
         <div class="call-progress" id="callProgress">
           <div class="progress indeterminate"><div class="progress-fill"></div></div>
@@ -324,6 +355,11 @@
         <button type="button" class="btn call-btn" id="btnParticipants">
           <svg class="btn-ico"><use href="#i-users"/></svg>
           <span data-i18n="call.participants">Участники</span>
+        </button>
+        <button type="button" class="btn call-btn" id="btnChat" data-i18n-title="chat.title" title="Чат звонка">
+          <svg class="btn-ico"><use href="#i-chat"/></svg>
+          <span data-i18n="call.chat">Чат</span>
+          <span class="file-badge chat-badge hidden" id="chatBadge">0</span>
         </button>
         <button type="button" class="btn call-btn" id="btnFiles" title="Файлы звонка">
           <svg class="btn-ico"><use href="#i-folder"/></svg>
@@ -359,7 +395,7 @@
         <svg><use href="#i-phone"/></svg>
         <div>
           <b>LongCall 98</b>
-          <small>версия 1.1.0 · Windows 9x Edition</small>
+          <small>версия 1.2.0 · Windows 9x Edition</small>
         </div>
       </div>
       <div class="progress indeterminate"><div class="progress-fill"></div></div>
@@ -402,5 +438,23 @@
 <audio id="remoteAudioSink" class="hidden"></audio>
 
 <script type="module" src="js/main.js"></script>
+  <!-- Отправка файла из буфера или перетаскиванием: компактная полоса -->
+  <div class="upload-bar hidden" id="uploadBar" role="status" aria-live="polite">
+    <div class="progress determinate"><div class="progress-fill" id="uploadFill"></div></div>
+    <div class="upload-row">
+      <span class="upload-text" id="uploadText"></span>
+      <button type="button" class="btn btn-sm" id="uploadCancel" data-i18n="files.cancel">Отменить</button>
+    </div>
+  </div>
+
+  <!-- Подсказка при перетаскивании файлов в окно звонка -->
+  <div class="drop-overlay hidden" id="dropOverlay" aria-hidden="true">
+    <div class="drop-box">
+      <svg class="drop-ico"><use href="#i-folder"/></svg>
+      <b data-i18n="drop.title">Отпустите, чтобы отправить в звонок</b>
+      <small data-i18n="drop.hint">Файл увидят все участники</small>
+    </div>
+  </div>
+
 </body>
 </html>

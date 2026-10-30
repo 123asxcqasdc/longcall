@@ -24,7 +24,7 @@ export const APP_SCHEME = "longcall";
 
 export const APP = {
   name: "LongCall 98",
-  version: "1.1.0",
+  version: "1.2.0",
   maxParticipants: 4,
   maxRecent: 12,
   roomCodeLength: 4,
@@ -37,6 +37,13 @@ export const APP = {
     // 96 КБ в base64 — это ~128 КБ строки: заметно меньше лимита в 10 МБ
     // на одну запись и достаточно мелко, чтобы прогресс шёл плавно.
     chunkBytes: 96 * 1024,
+  },
+  // Текстовый чат комнаты: короткие сообщения, только хвост переписки.
+  chat: {
+    maxLength: 500,
+    maxMessages: 80,
+    // Одно сообщение в 600 мс — защита от залипшей клавиши и спама.
+    minInterval: 600,
   },
   // Звонки только звуковые: видео не запрашивается и не принимается.
   mediaConstraints: {
@@ -97,6 +104,7 @@ export const STORAGE_KEYS = {
   sound: "lc.sound",
   mic: "lc.mic",
   profile: "lc.profile",
+  theme: "lc.theme",
   volume: "lc.volume.",
 };
 

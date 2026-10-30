@@ -84,6 +84,25 @@ export function setSoundsEnabled(on) {
   setPref(STORAGE_KEYS.sound, on ? "1" : "0");
 }
 
+/* --------------------------------- тема --------------------------------- */
+
+export const THEMES = ["win98", "nokia"];
+
+export function normalizeTheme(value) {
+  const next = String(value || "").trim().toLowerCase();
+  return THEMES.includes(next) ? next : "win98";
+}
+
+export function getTheme() {
+  return normalizeTheme(getPref(STORAGE_KEYS.theme, "win98"));
+}
+
+export function setTheme(theme) {
+  const next = normalizeTheme(theme);
+  setPref(STORAGE_KEYS.theme, next);
+  return next;
+}
+
 export function getPreferredMic() {
   return getPref(STORAGE_KEYS.mic, "") || "";
 }
