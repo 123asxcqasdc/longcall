@@ -15,9 +15,34 @@
     document.documentElement.classList.add("is-desktop");
   }
 </script>
-<link rel="stylesheet" href="css/win98.css">
-<link rel="stylesheet" href="css/app.css">
-<link rel="stylesheet" href="css/desktop.css">
+<!-- Версия сборки в адресах модулей и стилей: после обновления сайта браузер
+     берёт свежие файлы, а не те, что лежат в кэше. Поднимается вместе с версией
+     в js/config.js — за этим следит tools/check-assets.mjs в CI. -->
+<script type="importmap">
+{
+  "imports": {
+    "./js/audio.js": "./js/audio.js?v=1.2.1",
+    "./js/call.js": "./js/call.js?v=1.2.1",
+    "./js/callui.js": "./js/callui.js?v=1.2.1",
+    "./js/chat.js": "./js/chat.js?v=1.2.1",
+    "./js/config.js": "./js/config.js?v=1.2.1",
+    "./js/desktop.js": "./js/desktop.js?v=1.2.1",
+    "./js/diagnostics.js": "./js/diagnostics.js?v=1.2.1",
+    "./js/files.js": "./js/files.js?v=1.2.1",
+    "./js/firebase.js": "./js/firebase.js?v=1.2.1",
+    "./js/i18n.js": "./js/i18n.js?v=1.2.1",
+    "./js/main.js": "./js/main.js?v=1.2.1",
+    "./js/store.js": "./js/store.js?v=1.2.1",
+    "./js/turn.js": "./js/turn.js?v=1.2.1",
+    "./js/ui.js": "./js/ui.js?v=1.2.1",
+    "./js/util.js": "./js/util.js?v=1.2.1",
+    "./vendor/firebase.js": "./vendor/firebase.js?v=1.2.1"
+  }
+}
+</script>
+<link rel="stylesheet" href="css/win98.css?v=1.2.1">
+<link rel="stylesheet" href="css/app.css?v=1.2.1">
+<link rel="stylesheet" href="css/desktop.css?v=1.2.1">
 <!-- Сюда попадает css, который написал сам пользователь. Стоит последним,
      поэтому его правила перекрывают оформление приложения. -->
 <style id="userCss"></style>
@@ -400,7 +425,7 @@
         <svg><use href="#i-phone"/></svg>
         <div>
           <b>LongCall 98</b>
-          <small>версия 1.2.0 · Windows 9x Edition</small>
+          <small>версия 1.2.1 · Windows 9x Edition</small>
         </div>
       </div>
       <div class="progress indeterminate"><div class="progress-fill"></div></div>
@@ -442,7 +467,7 @@
 <div class="toasts" id="toasts" aria-live="polite"></div>
 <audio id="remoteAudioSink" class="hidden"></audio>
 
-<script type="module" src="js/main.js"></script>
+<script type="module" src="js/main.js?v=1.2.1"></script>
   <!-- Отправка файла из буфера или перетаскиванием: компактная полоса -->
   <div class="upload-bar hidden" id="uploadBar" role="status" aria-live="polite">
     <div class="progress determinate"><div class="progress-fill" id="uploadFill"></div></div>

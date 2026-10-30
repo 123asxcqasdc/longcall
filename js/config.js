@@ -24,7 +24,7 @@ export const APP_SCHEME = "longcall";
 
 export const APP = {
   name: "LongCall 98",
-  version: "1.2.0",
+  version: "1.2.1",
   maxParticipants: 4,
   maxRecent: 12,
   roomCodeLength: 4,

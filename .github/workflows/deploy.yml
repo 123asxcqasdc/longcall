@@ -28,11 +28,16 @@ jobs:
 
       - name: Validate JavaScript syntax
         run: |
-          for file in js/*.js tools/*.js electron/*.cjs; do
+          for file in js/*.js tools/*.mjs electron/*.cjs; do
             node --check "$file"
           done
           test -s vendor/firebase.js
           echo "syntax ok"
+
+      # Версия сборки должна совпадать в js/config.js, version.txt и import map,
+      # иначе браузеры останутся на закэшированных файлах после деплоя.
+      - name: Check asset versions
+        run: node tools/check-assets.mjs
 
       - name: Prepare static site
         run: |
