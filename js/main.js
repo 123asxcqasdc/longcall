@@ -1694,17 +1694,13 @@ const CSS_SAMPLE = `/* Пример: тёмное оформление окна 
 function openCustomCss() {
   const wrap = document.createElement("div");
 
-  const hint = el("p", {
-    class: "modal-hint",
-    text: t("css.hint", { max: Math.round(APP.css.maxLength / 1000) }),
-  });
+  const hint = el("p", { class: "modal-hint", text: t("css.hint") });
 
   const area = el("textarea", {
     class: "input css-editor",
     id: "cssEditor",
     rows: "9",
     spellcheck: "false",
-    maxlength: String(APP.css.maxLength),
   });
   area.value = getCustomCss();
   area.placeholder = t("css.placeholder");
@@ -1734,8 +1730,16 @@ function openCustomCss() {
         timeout: 2200,
       });
       return true;
-    } catch {
-      toast({ title: t("css.failed"), icon: "i-warn", tone: "error" });
+    } catch (err) {
+      // Единственный потолок — квота браузера; показываем, сколько не влезло.
+      const size = Number(err?.size) || 0;
+      toast({
+        title: t("css.failed"),
+        text: size ? t("css.failedSize", { n: size.toLocaleString(getLang() === "ru" ? "ru-RU" : "en-US") }) : "",
+        icon: "i-warn",
+        tone: "error",
+        timeout: 6000,
+      });
       return false;
     }
   };
