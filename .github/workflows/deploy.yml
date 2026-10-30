@@ -40,6 +40,7 @@ jobs:
           rsync -a \
             --exclude '.git' \
             --exclude '.github' \
+            --exclude '.firebaserc' \
             --exclude 'node_modules' \
             --exclude 'tools' \
             --exclude 'electron' \
