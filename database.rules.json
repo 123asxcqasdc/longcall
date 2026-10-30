@@ -36,6 +36,12 @@
               ".validate": "newData.isString() && newData.val().length < 200000"
             }
           }
+        },
+        "chat": {
+          "$message": {
+            ".write": "auth != null",
+            ".validate": "newData.hasChildren(['from','nick','text','at']) && newData.child('from').val() === auth.uid && newData.child('nick').isString() && newData.child('nick').val().length <= 40 && newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 500 && newData.child('at').isNumber()"
+          }
         }
       }
     },

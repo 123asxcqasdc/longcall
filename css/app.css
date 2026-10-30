@@ -426,6 +426,99 @@ body.is-booting .desktop > .win:not(.splash) { visibility: hidden; }
 }
 .file-badge.hidden { display: none; }
 
+/* ---------------------------------------------- своё оформление */
+
+.css-editor {
+  width: 100%;
+  height: 168px;
+  resize: vertical;
+  padding: 4px 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.45;
+  white-space: pre;
+  overflow: auto;
+}
+
+/* ------------------------------------------------------ чат звонка */
+
+.call-bottom.chat-open .call-log { display: none; }
+.call-chat { display: flex; flex-direction: column; gap: 4px; }
+.call-chat.hidden { display: none; }
+
+.chat-list {
+  height: 88px;
+  overflow: auto;
+  padding: 3px 5px;
+  background: #fff;
+  box-shadow: var(--bevel-in);
+  font-size: 11px;
+  line-height: 1.35;
+}
+.chat-msg { display: flex; gap: 5px; padding: 1px 0; min-width: 0; }
+.chat-msg + .chat-msg { box-shadow: inset 0 1px 0 #ececec; }
+.chat-time { flex: 0 0 auto; color: #707070; font-family: var(--font-mono); font-size: 9px; padding-top: 1px; }
+.chat-nick { flex: 0 0 auto; font-weight: 700; color: #000080; max-width: 92px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chat-text { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.chat-mine .chat-nick { color: #006000; }
+.chat-empty { color: #707070; }
+.chat-form { display: flex; gap: 4px; }
+.chat-input { flex: 1 1 auto; min-width: 0; height: 24px; }
+.chat-form .btn { flex: 0 0 auto; }
+
+/* ------------------------------------- отправка из буфера и перетаскиванием */
+
+.upload-bar {
+  position: fixed;
+  right: 12px;
+  bottom: 44px;
+  z-index: 70;
+  width: min(280px, calc(100% - 24px));
+  padding: 6px 7px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: var(--face);
+  box-shadow: var(--bevel-out);
+  font-size: 10px;
+}
+.upload-bar.hidden { display: none; }
+.upload-bar .progress { height: 12px; }
+.upload-row { display: flex; align-items: center; gap: 6px; }
+.upload-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.upload-row .btn { flex: 0 0 auto; padding: 1px 6px; min-height: 20px; font-size: 10px; }
+
+.drop-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 32, 96, 0.28);
+  pointer-events: none;
+}
+.drop-overlay.hidden { display: none; }
+.drop-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 16px 22px;
+  background: var(--face);
+  box-shadow: var(--bevel-out);
+  text-align: center;
+}
+.drop-box b { font-size: 12px; }
+.drop-box small { color: #404040; font-size: 10px; }
+.drop-ico { width: 26px; height: 26px; color: #806000; }
+
 /* --------------------------------------------------- файлы звонка */
 .files-panel { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .files-panel .files-empty { margin: 2px 0 4px; }
@@ -833,6 +926,7 @@ body.is-booting .desktop > .win:not(.splash) { visibility: hidden; }
   .hero-logo { display: none; }
   .code-input { width: 70px; }
   .call-log { height: 40px; }
+  .chat-list { height: 58px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -845,6 +939,7 @@ body.is-booting .desktop > .win:not(.splash) { visibility: hidden; }
   .win-home, .win-call { height: calc(100% - 16px); top: 8px; transform: none; left: auto; right: 8px; }
   .win-home { left: 8px; right: auto; width: min(560px, calc(100% - 40px)); }
   .hero-hint { display: none; }
+  .chat-list { height: 56px; }
 }
 
 /* ======================= дополнения: состояния и мелочи ======================= */
@@ -915,5 +1010,6 @@ body.is-dragging, body.is-dragging * { cursor: move !important; user-select: non
 @media (max-width: 720px) {
   .win .menubar { display: none; }
   .call-log { height: 44px; }
+  .chat-list { height: 72px; }
   .tiles[data-count="2"] { grid-template-columns: 1fr !important; }
 }

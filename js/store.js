@@ -84,6 +84,28 @@ export function setSoundsEnabled(on) {
   setPref(STORAGE_KEYS.sound, on ? "1" : "0");
 }
 
+/* --------------------------- своё оформление ---------------------------- */
+
+/**
+ * CSS, который написал пользователь. Хранится строкой в localStorage:
+ * это его собственный браузер, исполнять тут нечего, кроме стилей.
+ */
+export function getCustomCss() {
+  return getPref(STORAGE_KEYS.css, "");
+}
+
+export function setCustomCss(css) {
+  const text = String(css || "").slice(0, APP.css.maxLength);
+  try {
+    if (text.trim()) localStorage.setItem(STORAGE_KEYS.css, text);
+    else localStorage.removeItem(STORAGE_KEYS.css);
+  } catch {
+    // Переполненное или запрещённое хранилище: вызывающий покажет ошибку.
+    throw new Error("css-storage");
+  }
+  return text;
+}
+
 export function getPreferredMic() {
   return getPref(STORAGE_KEYS.mic, "") || "";
 }
