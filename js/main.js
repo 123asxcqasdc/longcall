@@ -44,9 +44,8 @@ import {
   randomRoomCode,
   normalizeRoomCode,
   colorFor,
-  getTheme,
-  setTheme,
-  normalizeTheme,
+  getCustomCss,
+  setCustomCss,
 } from "./store.js";
 import {
   signInLocal,
@@ -103,7 +102,6 @@ let lastReport = null;
    ========================================================================= */
 
 async function boot() {
-  applyTheme(getTheme());
   initLang();
   document.documentElement.lang = getLang();
   applyI18n();
@@ -1670,29 +1668,103 @@ async function sendChatMessage() {
   }
 }
 
-/* ============================ тема оформления =========================== */
+/* ========================== своё оформление (css) ======================= */
 
-function syncThemeChecks() {
-  const current = getTheme();
-  document.querySelectorAll("[data-theme-check]").forEach((node) => {
-    node.textContent = node.dataset.themeCheck === current ? "✓" : "";
-  });
+/** Ставит пользовательский css в <style id="userCss"> — поверх стилей приложения. */
+function applyUserCss(css) {
+  const node = document.getElementById("userCss");
+  if (node) node.textContent = css || "";
 }
 
-/** Переключает оформление и запоминает выбор. Без перезагрузки страницы. */
-function applyTheme(theme, { announce = false } = {}) {
-  const next = normalizeTheme(theme);
-  setTheme(next);
-  if (next === "nokia") document.documentElement.dataset.theme = "nokia";
-  else delete document.documentElement.dataset.theme;
-  syncThemeChecks();
-  if (announce) {
-    toast({
-      title: next === "nokia" ? t("theme.nokiaOn") : t("theme.win98On"),
-      icon: "i-gear",
-      timeout: 2000,
-    });
+/** Грубая проверка: чаще всего ломаются именно скобки. */
+function cssLooksBalanced(css) {
+  let depth = 0;
+  for (const char of String(css || "")) {
+    if (char === "{") depth += 1;
+    else if (char === "}") depth -= 1;
+    if (depth < 0) return false;
   }
+  return depth === 0;
+}
+
+const CSS_SAMPLE = `/* Пример: тёмное оформление окна звонка */
+.win-call { background: #222; color: #ddd; }
+.win-call .call-log, .win-call .chat-list { background: #111; color: #cfc; }`;
+
+function openCustomCss() {
+  const wrap = document.createElement("div");
+
+  const hint = el("p", {
+    class: "modal-hint",
+    text: t("css.hint", { max: Math.round(APP.css.maxLength / 1000) }),
+  });
+
+  const area = el("textarea", {
+    class: "input css-editor",
+    id: "cssEditor",
+    rows: "9",
+    spellcheck: "false",
+    maxlength: String(APP.css.maxLength),
+  });
+  area.value = getCustomCss();
+  area.placeholder = t("css.placeholder");
+
+  const note = el("small", { class: "small-dim", text: t("css.note") });
+
+  const sampleBtn = el("button", {
+    type: "button",
+    class: "btn btn-sm",
+    text: t("css.sample"),
+  });
+  sampleBtn.addEventListener("click", () => {
+    if (area.value.trim() && !window.confirm(t("css.sampleAsk"))) return;
+    area.value = CSS_SAMPLE;
+    area.focus();
+  });
+
+  wrap.append(hint, area, note, el("div", { class: "row" }, [sampleBtn]));
+
+  const save = (value) => {
+    try {
+      const text = setCustomCss(value);
+      applyUserCss(text);
+      toast({
+        title: text.trim() ? t("css.saved") : t("css.cleared"),
+        icon: "i-gear",
+        timeout: 2200,
+      });
+      return true;
+    } catch {
+      toast({ title: t("css.failed"), icon: "i-warn", tone: "error" });
+      return false;
+    }
+  };
+
+  openModal({
+    title: t("css.title"),
+    icon: "i-gear",
+    width: "520px",
+    body: wrap,
+    buttons: [
+      {
+        label: t("css.apply"),
+        onClick: () => {
+          const css = area.value;
+          if (!cssLooksBalanced(css)) {
+            // Не мешаем сохранить, но предупреждаем: браузер молча выбросит такие правила.
+            toast({ title: t("css.braces"), icon: "i-warn", tone: "error" });
+            return false;
+          }
+          return save(css);
+        },
+      },
+      {
+        label: t("css.clear"),
+        onClick: () => save(""),
+      },
+      { label: t("common.close"), value: "cancel" },
+    ],
+  });
 }
 
 /* ==================== файлы из буфера и перетаскиванием ================= */
@@ -2087,11 +2159,8 @@ async function handleAction(action) {
     case "chat":
       toggleChat();
       break;
-    case "theme-98":
-      applyTheme("win98", { announce: true });
-      break;
-    case "theme-nokia":
-      applyTheme("nokia", { announce: true });
+    case "custom-css":
+      openCustomCss();
       break;
     case "hangup":
       if (state.session) hangup();
@@ -2277,7 +2346,6 @@ function setupChrome() {
 
   // Ctrl+V / перетаскивание файлов в звонок
   setupTransfers();
-  syncThemeChecks();
 
   // разблокировка аудиоконтекста первым жестом
   const unlock = () => audioEngine.unlock();

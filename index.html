@@ -14,18 +14,25 @@
   if (navigator.userAgent.indexOf("Electron/") !== -1) {
     document.documentElement.classList.add("is-desktop");
   }
-  // Тема из localStorage ставится до загрузки стилей: иначе при «Nokia»
-  // на мгновение мелькал бы синий рабочий стол Windows 98.
-  try {
-    if (String(localStorage.getItem("lc.theme") || "").trim().toLowerCase() === "nokia") {
-      document.documentElement.dataset.theme = "nokia";
-    }
-  } catch (e) {}
 </script>
 <link rel="stylesheet" href="css/win98.css">
 <link rel="stylesheet" href="css/app.css">
 <link rel="stylesheet" href="css/desktop.css">
-<link rel="stylesheet" href="css/nokia.css">
+<!-- Сюда попадает css, который написал сам пользователь. Стоит последним,
+     поэтому его правила перекрывают оформление приложения. -->
+<style id="userCss"></style>
+<script>
+  // Своё оформление применяется до отрисовки: иначе на мгновение был бы
+  // виден вид по умолчанию. ?nocss отключает его — на случай, если css
+  // сломал интерфейс и до меню не добраться.
+  (function () {
+    try {
+      if (/[?&]nocss\b/.test(location.search)) return;
+      var css = localStorage.getItem("lc.css");
+      if (css) document.getElementById("userCss").textContent = css;
+    } catch (e) {}
+  })();
+</script>
 </head>
 <body class="is-booting">
 
@@ -196,8 +203,7 @@
           <div class="sep"></div>
           <button type="button" data-action="toggle-lang"><span data-i18n="menu.view.lang">Язык: Русский</span></button>
           <div class="sep"></div>
-          <button type="button" data-action="theme-98"><span data-i18n="menu.view.theme98">Оформление: Windows 98</span><span class="menu-check theme-check" data-theme-check="win98">✓</span></button>
-          <button type="button" data-action="theme-nokia"><span data-i18n="menu.view.themeNokia">Оформление: Nokia</span><span class="menu-check theme-check" data-theme-check="nokia"></span></button>
+          <button type="button" data-action="custom-css"><span data-i18n="menu.view.css">Своё оформление…</span></button>
         </div>
       </div>
       <div class="menu">
@@ -294,8 +300,7 @@
         <div class="dropdown">
           <button type="button" data-action="chat"><span data-i18n="chat.menu">Чат звонка</span></button>
           <div class="sep"></div>
-          <button type="button" data-action="theme-98"><span data-i18n="menu.view.theme98">Оформление: Windows 98</span><span class="menu-check theme-check" data-theme-check="win98">✓</span></button>
-          <button type="button" data-action="theme-nokia"><span data-i18n="menu.view.themeNokia">Оформление: Nokia</span><span class="menu-check theme-check" data-theme-check="nokia"></span></button>
+          <button type="button" data-action="custom-css"><span data-i18n="menu.view.css">Своё оформление…</span></button>
         </div>
       </div>
       <div class="menu">

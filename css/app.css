@@ -426,6 +426,20 @@ body.is-booting .desktop > .win:not(.splash) { visibility: hidden; }
 }
 .file-badge.hidden { display: none; }
 
+/* ---------------------------------------------- своё оформление */
+
+.css-editor {
+  width: 100%;
+  height: 168px;
+  resize: vertical;
+  padding: 4px 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.45;
+  white-space: pre;
+  overflow: auto;
+}
+
 /* ------------------------------------------------------ чат звонка */
 
 .call-bottom.chat-open .call-log { display: none; }

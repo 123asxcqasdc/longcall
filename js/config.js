@@ -38,6 +38,10 @@ export const APP = {
     // на одну запись и достаточно мелко, чтобы прогресс шёл плавно.
     chunkBytes: 96 * 1024,
   },
+  // Своё оформление: пользовательский css поверх стилей приложения.
+  css: {
+    maxLength: 20000,
+  },
   // Текстовый чат комнаты: короткие сообщения, только хвост переписки.
   chat: {
     maxLength: 500,
@@ -104,7 +108,7 @@ export const STORAGE_KEYS = {
   sound: "lc.sound",
   mic: "lc.mic",
   profile: "lc.profile",
-  theme: "lc.theme",
+  css: "lc.css",
   volume: "lc.volume.",
 };
 

@@ -84,23 +84,26 @@ export function setSoundsEnabled(on) {
   setPref(STORAGE_KEYS.sound, on ? "1" : "0");
 }
 
-/* --------------------------------- тема --------------------------------- */
+/* --------------------------- своё оформление ---------------------------- */
 
-export const THEMES = ["win98", "nokia"];
-
-export function normalizeTheme(value) {
-  const next = String(value || "").trim().toLowerCase();
-  return THEMES.includes(next) ? next : "win98";
+/**
+ * CSS, который написал пользователь. Хранится строкой в localStorage:
+ * это его собственный браузер, исполнять тут нечего, кроме стилей.
+ */
+export function getCustomCss() {
+  return getPref(STORAGE_KEYS.css, "");
 }
 
-export function getTheme() {
-  return normalizeTheme(getPref(STORAGE_KEYS.theme, "win98"));
-}
-
-export function setTheme(theme) {
-  const next = normalizeTheme(theme);
-  setPref(STORAGE_KEYS.theme, next);
-  return next;
+export function setCustomCss(css) {
+  const text = String(css || "").slice(0, APP.css.maxLength);
+  try {
+    if (text.trim()) localStorage.setItem(STORAGE_KEYS.css, text);
+    else localStorage.removeItem(STORAGE_KEYS.css);
+  } catch {
+    // Переполненное или запрещённое хранилище: вызывающий покажет ошибку.
+    throw new Error("css-storage");
+  }
+  return text;
 }
 
 export function getPreferredMic() {
