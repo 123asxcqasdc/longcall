@@ -94,14 +94,21 @@ export function getCustomCss() {
   return getPref(STORAGE_KEYS.css, "");
 }
 
+/**
+ * Сохраняет css как есть, без обрезки: своего лимита у приложения нет.
+ * Потолок один — квота localStorage в браузере (обычно ~5 МБ на сайт),
+ * и о ней сообщаем вызывающему.
+ */
 export function setCustomCss(css) {
-  const text = String(css || "").slice(0, APP.css.maxLength);
+  const text = String(css || "");
   try {
     if (text.trim()) localStorage.setItem(STORAGE_KEYS.css, text);
     else localStorage.removeItem(STORAGE_KEYS.css);
   } catch {
-    // Переполненное или запрещённое хранилище: вызывающий покажет ошибку.
-    throw new Error("css-storage");
+    // Переполненное или запрещённое хранилище.
+    const error = new Error("css-storage");
+    error.size = text.length;
+    throw error;
   }
   return text;
 }
