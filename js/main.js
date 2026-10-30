@@ -85,6 +85,8 @@ const state = {
   chat: null,
   chatOpen: false,
   chatUnread: 0,
+  // предложение обновиться уже показано (один раз за сессию)
+  updateOffered: false,
 };
 
 const callView = new CallView();
@@ -1668,6 +1670,54 @@ async function sendChatMessage() {
   }
 }
 
+/* ======================= обновление сайта ============================== */
+
+const UPDATE_INTERVAL = 10 * 60 * 1000;
+
+/**
+ * Сверяет версию запущенного кода с version.txt на сайте.
+ *
+ * version.txt маленький и запрашивается мимо кэша, поэтому отвечает всегда
+ * свежим. Если версии разошлись — предлагаем перезагрузиться: иначе во
+ * вкладке, открытой до обновления, продолжает работать старый код.
+ */
+async function checkForUpdate() {
+  if (state.updateOffered) return;
+  try {
+    const res = await fetch(`version.txt?t=${Date.now()}`, { cache: "no-store" });
+    if (!res.ok) return;
+    const latest = (await res.text()).trim();
+    if (!latest || latest === APP.version) return;
+    state.updateOffered = true;
+    offerUpdate(latest);
+  } catch {
+    // Нет сети или файла нет — молчим: это не критично для звонка.
+  }
+}
+
+function offerUpdate(latest) {
+  openModal({
+    title: t("update.title"),
+    icon: "i-info",
+    body: el("p", { text: t("update.text", { now: APP.version, next: latest }) }),
+    buttons: [
+      { label: t("update.reload"), onClick: () => reloadApp(latest) },
+      { label: t("common.close"), onClick: () => {} },
+    ],
+  });
+}
+
+/**
+ * Перезагружает страницу с версией в адресе. Так index.html приходит свежим,
+ * а вместе с ним — новые адреса модулей из import map, и вкладка не остаётся
+ * на старом коде из кэша.
+ */
+function reloadApp(latest) {
+  const url = new URL(location.href);
+  url.searchParams.set("v", latest);
+  location.replace(url.toString());
+}
+
 /* ========================== своё оформление (css) ======================= */
 
 /** Ставит пользовательский css в <style id="userCss"> — поверх стилей приложения. */
@@ -2350,6 +2400,14 @@ function setupChrome() {
 
   // Ctrl+V / перетаскивание файлов в звонок
   setupTransfers();
+
+  // Сайт статический: если вкладка открыта давно, в ней работает старый код.
+  // Спрашиваем version.txt и предлагаем перезагрузиться, когда выйдет новый.
+  checkForUpdate();
+  setInterval(checkForUpdate, UPDATE_INTERVAL);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") checkForUpdate();
+  });
 
   // разблокировка аудиоконтекста первым жестом
   const unlock = () => audioEngine.unlock();

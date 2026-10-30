@@ -75,16 +75,16 @@ npm run dist:win     # установщик (setup.exe) + portable.exe → relea
 
 | Файл | Что это |
 | --- | --- |
-| `longcall98-1.2.0-setup.exe` | мастер установки (NSIS, `oneClick: false`) |
-| `longcall98-1.2.0-portable.exe` | запуск без установки |
-| `longcall98-1.2.0-x86_64.AppImage` | Linux, без установки |
-| `longcall98-1.2.0-amd64.deb` | Linux, Debian/Ubuntu |
+| `longcall98-1.2.1-setup.exe` | мастер установки (NSIS, `oneClick: false`) |
+| `longcall98-1.2.1-portable.exe` | запуск без установки |
+| `longcall98-1.2.1-x86_64.AppImage` | Linux, без установки |
+| `longcall98-1.2.1-amd64.deb` | Linux, Debian/Ubuntu |
 
 Workflow [`.github/workflows/desktop.yml`](.github/workflows/desktop.yml) собирает оба
 варианта на GitHub-раннерах и прикрепляет файлы к релизу при пуше тега `v*`:
 
 ```bash
-git tag v1.2.0 && git push origin v1.2.0
+git tag v1.2.1 && git push origin v1.2.1
 ```
 
 Иконки пересобираются скриптом `tools/make-icons.py` (нужен Pillow, только для разработки):
@@ -290,6 +290,36 @@ IP-адреса кандидатов не пишутся — только тип
 - **Пример.** Кнопка «Вставить пример» подставляет тёмное оформление окна звонка —
   дальше можно править под себя.
 
+### Обновления и кэш
+
+GitHub Pages — это статика, и браузер держит `js` и `css` в кэше. Чтобы после
+деплоя не оставался старый код, версия сборки стоит в самих адресах файлов:
+
+```html
+<script type="importmap">
+{ "imports": { "./js/main.js": "./js/main.js?v=1.2.1", … } }
+</script>
+<script type="module" src="js/main.js?v=1.2.1"></script>
+```
+
+- `js/config.js` → `APP.version` — единственный источник версии;
+- `version.txt` в корне — по нему приложение понимает, что сайт обновился;
+- `index.html` — те же версии в `import map` и в ссылках на стили и модули.
+
+Если вкладка открыта давно, приложение само сверяется с `version.txt` (при
+загрузке, раз в 10 минут и при возвращении на вкладку) и предлагает
+перезагрузиться. Перезагрузка идёт по адресу с `?v=<новая версия>`, поэтому
+`index.html` приходит свежим, а вместе с ним — новые адреса модулей.
+
+Совпадение версий проверяется в CI, так что забыть поднять её не получится:
+
+```bash
+node tools/check-assets.mjs
+```
+
+Скрипт падает, если версия в `js/config.js`, `version.txt` и `import map` разная,
+если у модуля нет записи в `import map` или если ссылка на стиль потеряла `?v=`.
+
 ### Как устроено
 
 ```
@@ -425,9 +455,11 @@ js/ui.js                модалки, тосты, менеджер окон, �
 js/i18n.js              словари RU/EN
 js/store.js             localStorage, cookie, утилиты
 js/config.js            конфиг Firebase, лимиты, ICE
+version.txt             версия сборки: по ней приложение узнаёт об обновлении
 js/desktop.js           мост к Electron (в браузере — заглушка)
 css/desktop.css         режим настольного приложения
 vendor/firebase.js      собранный Firebase SDK (auth + database)
+tools/check-assets.mjs  проверка версий и import map (запускается в CI)
 electron/               обёртка для Windows и Linux
 tools/firebase-entry.js точка входа для сборки SDK
 ```
