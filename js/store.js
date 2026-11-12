@@ -139,16 +139,63 @@ export function suggestNick() {
   return `${a} ${n} ${Math.floor(Math.random() * 90 + 10)}`;
 }
 
-export function randomRoomCode() {
-  // 4 цифры, первая не ноль — как «внутренний номер».
-  const first = Math.floor(Math.random() * 9) + 1;
-  const rest = String(Math.floor(Math.random() * 1000)).padStart(3, "0");
-  return `${first}${rest}`;
+const ROOM_CODE = APP.roomCode;
+
+/**
+ * Случайные индексы в алфавите.
+ *
+ * crypto.getRandomValues, а не Math.random: код комнаты — это фактически
+ * приглашение, и предсказуемая последовательность тут ни к чему.
+ * Отбраковка (rejection sampling) убирает перекос из-за остатка от деления.
+ */
+function randomIndexes(count, size) {
+  const out = [];
+  const cryptoObj = typeof crypto !== "undefined" ? crypto : null;
+  if (!cryptoObj?.getRandomValues || !Number.isInteger(size) || size < 2) {
+    while (out.length < count) out.push(Math.floor(Math.random() * size));
+    return out;
+  }
+  const limit = 256 - (256 % size);
+  const buffer = new Uint8Array(count);
+  while (out.length < count) {
+    cryptoObj.getRandomValues(buffer);
+    for (const byte of buffer) {
+      if (byte >= limit) continue;
+      out.push(byte % size);
+      if (out.length === count) break;
+    }
+  }
+  return out;
 }
 
+/** Новый код комнаты: буквы и цифры без похожих символов. */
+export function randomRoomCode(length = ROOM_CODE.generateLength) {
+  const alphabet = ROOM_CODE.alphabet;
+  const size = Math.min(Math.max(length, ROOM_CODE.minLength), ROOM_CODE.maxLength);
+  return randomIndexes(size, alphabet.length)
+    .map((index) => alphabet[index])
+    .join("");
+}
+
+/**
+ * Приводит ввод к коду комнаты: убирает пробелы и мусор, поднимает регистр.
+ *
+ * Принимает и старые четырёхзначные коды, и новые — от 4 до 12 символов
+ * из латиницы и цифр. Если после чистки длина не та, возвращает null.
+ */
 export function normalizeRoomCode(raw) {
-  const digits = String(raw || "").replace(/\D/g, "").slice(0, APP.roomCodeLength);
-  return digits.length === APP.roomCodeLength ? digits : null;
+  const code = String(raw || "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "");
+  // Длиннее предела — это не наш код, а не «обрежем и сойдёт»: иначе опечатка
+  // в ссылке тихо приводила бы в чужую комнату.
+  if (code.length < ROOM_CODE.minLength || code.length > ROOM_CODE.maxLength) return null;
+  return code;
+}
+
+/** Код подходит для ссылки и адреса — той же проверкой, что и ручной ввод. */
+export function isRoomCode(raw) {
+  return normalizeRoomCode(raw) !== null;
 }
 
 export function initialOf(nick) {
