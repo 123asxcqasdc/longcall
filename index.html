@@ -21,28 +21,29 @@
 <script type="importmap">
 {
   "imports": {
-    "./js/audio.js": "./js/audio.js?v=1.2.1",
-    "./js/call.js": "./js/call.js?v=1.2.1",
-    "./js/callui.js": "./js/callui.js?v=1.2.1",
-    "./js/chat.js": "./js/chat.js?v=1.2.1",
-    "./js/config.js": "./js/config.js?v=1.2.1",
-    "./js/desktop.js": "./js/desktop.js?v=1.2.1",
-    "./js/diagnostics.js": "./js/diagnostics.js?v=1.2.1",
-    "./js/files.js": "./js/files.js?v=1.2.1",
-    "./js/firebase.js": "./js/firebase.js?v=1.2.1",
-    "./js/i18n.js": "./js/i18n.js?v=1.2.1",
-    "./js/main.js": "./js/main.js?v=1.2.1",
-    "./js/store.js": "./js/store.js?v=1.2.1",
-    "./js/turn.js": "./js/turn.js?v=1.2.1",
-    "./js/ui.js": "./js/ui.js?v=1.2.1",
-    "./js/util.js": "./js/util.js?v=1.2.1",
-    "./vendor/firebase.js": "./vendor/firebase.js?v=1.2.1"
+    "./js/audio.js": "./js/audio.js?v=1.2.2",
+    "./js/call.js": "./js/call.js?v=1.2.2",
+    "./js/callui.js": "./js/callui.js?v=1.2.2",
+    "./js/chat.js": "./js/chat.js?v=1.2.2",
+    "./js/config.js": "./js/config.js?v=1.2.2",
+    "./js/desktop.js": "./js/desktop.js?v=1.2.2",
+    "./js/diagnostics.js": "./js/diagnostics.js?v=1.2.2",
+    "./js/files.js": "./js/files.js?v=1.2.2",
+    "./js/firebase.js": "./js/firebase.js?v=1.2.2",
+    "./js/i18n.js": "./js/i18n.js?v=1.2.2",
+    "./js/main.js": "./js/main.js?v=1.2.2",
+    "./js/store.js": "./js/store.js?v=1.2.2",
+    "./js/turn.js": "./js/turn.js?v=1.2.2",
+    "./js/ui.js": "./js/ui.js?v=1.2.2",
+    "./js/util.js": "./js/util.js?v=1.2.2",
+    "./js/words.js": "./js/words.js?v=1.2.2",
+    "./vendor/firebase.js": "./vendor/firebase.js?v=1.2.2"
   }
 }
 </script>
-<link rel="stylesheet" href="css/win98.css?v=1.2.1">
-<link rel="stylesheet" href="css/app.css?v=1.2.1">
-<link rel="stylesheet" href="css/desktop.css?v=1.2.1">
+<link rel="stylesheet" href="css/win98.css?v=1.2.2">
+<link rel="stylesheet" href="css/app.css?v=1.2.2">
+<link rel="stylesheet" href="css/desktop.css?v=1.2.2">
 <!-- Сюда попадает css, который написал сам пользователь. Стоит последним,
      поэтому его правила перекрывают оформление приложения. -->
 <style id="userCss"></style>
@@ -284,9 +285,10 @@
         </button>
         <div class="join-code">
           <label for="joinCode" data-i18n="home.codeLabel">Код комнаты:</label>
-          <input id="joinCode" class="input code-input" inputmode="numeric" autocomplete="off" maxlength="4" placeholder="0000" aria-label="Код комнаты">
+          <input id="joinCode" class="input code-input" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="12" placeholder="A2B3K7">
           <button type="button" class="btn" id="btnJoinCode"><span data-i18n="home.joinCode">Войти</span></button>
         </div>
+        <small class="small-dim join-hint" data-i18n="home.codeHint">Подойдёт и старый код из 4 цифр, и новый из 6 знаков.</small>
       </div>
     </div>
 
@@ -345,11 +347,11 @@
       <div class="call-head">
         <div class="room-badge">
           <span class="room-label" data-i18n="call.room">Комната</span>
-          <b id="callCode">0000</b>
+          <b id="callCode">A2B3K7</b>
         </div>
         <div class="call-head-actions">
           <span class="participants-count" id="callCount">1 / 4</span>
-          <button type="button" class="btn btn-sm" id="btnCopyLink">
+          <button type="button" class="btn btn-sm" id="btnCopyLink" data-i18n-title="invite.openTitle" title="Приглашение: ссылка и код по словам">
             <svg class="btn-ico"><use href="#i-copy"/></svg>
             <span data-i18n="call.copyLink">Ссылка</span>
           </button>
@@ -425,7 +427,7 @@
         <svg><use href="#i-phone"/></svg>
         <div>
           <b>LongCall 98</b>
-          <small>версия 1.2.1 · Windows 9x Edition</small>
+          <small>версия 1.2.2 · Windows 9x Edition</small>
         </div>
       </div>
       <div class="progress indeterminate"><div class="progress-fill"></div></div>
@@ -467,7 +469,7 @@
 <div class="toasts" id="toasts" aria-live="polite"></div>
 <audio id="remoteAudioSink" class="hidden"></audio>
 
-<script type="module" src="js/main.js?v=1.2.1"></script>
+<script type="module" src="js/main.js?v=1.2.2"></script>
   <!-- Отправка файла из буфера или перетаскиванием: компактная полоса -->
   <div class="upload-bar hidden" id="uploadBar" role="status" aria-live="polite">
     <div class="progress determinate"><div class="progress-fill" id="uploadFill"></div></div>

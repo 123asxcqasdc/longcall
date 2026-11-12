@@ -15,6 +15,7 @@ import { resolveIceServers, resetIceCache } from "./turn.js";
 import { CallDiagnostics } from "./diagnostics.js";
 import { RoomFiles, formatSize, previewKind } from "./files.js";
 import { RoomChat, cleanMessage, shortTime } from "./chat.js";
+import { codeWords, dictationPhrase } from "./words.js";
 import { CallView } from "./callui.js";
 import {
   $,
@@ -957,14 +958,102 @@ async function handleInvite(code) {
   if (answer) await joinRoom(code, { source: "invite" });
 }
 
-async function copyRoomLink() {
-  if (!state.activeCode) return;
-  const ok = await copyText(roomUrl(state.activeCode));
-  toast({
-    title: ok ? t("call.linkCopied") : t("err.title"),
-    text: ok ? roomUrl(state.activeCode) : "",
+/**
+ * Окно приглашения: ссылка на комнату и разбор кода по словам.
+ *
+ * Код из шести букв и цифр по телефону не продиктуешь — «B» и «D», «M» и «N»
+ * на слух неразличимы. Поэтому рядом с каждым символом стоит английское слово
+ * из 5–9 букв, начинающееся с этого символа: «A — Alpha», «7 — Sevenfold».
+ * Фразу можно скопировать целиком и отправить в мессенджер.
+ */
+function openInvite() {
+  const code = state.activeCode;
+  if (!code) return;
+
+  const link = roomUrl(code);
+  const wrap = document.createElement("div");
+
+  // --- ссылка ---
+  const linkField = el("div", { class: "field" });
+  linkField.append(el("label", { for: "inviteLink", text: t("invite.link") }));
+  const linkRow = el("div", { class: "row" });
+  const linkInput = el("input", {
+    class: "input grow",
+    id: "inviteLink",
+    readonly: "",
+    value: link,
+  });
+  const copyBtn = el("button", {
+    type: "button",
+    class: "btn btn-sm",
+    text: t("common.copy"),
+  });
+  copyBtn.addEventListener("click", async () => {
+    const ok = await copyText(link);
+    toast({
+      title: ok ? t("call.linkCopied") : t("err.title"),
+      icon: "i-copy",
+      tone: ok ? "info" : "error",
+      timeout: 2200,
+    });
+  });
+  linkRow.append(linkInput, copyBtn);
+  linkField.append(linkRow);
+  wrap.append(linkField);
+
+  // --- код по словам ---
+  const codeField = el("div", { class: "field" });
+  codeField.append(el("label", { text: t("invite.code") }));
+
+  const tiles = el("div", { class: "code-tiles" });
+  for (const item of codeWords(code)) {
+    const tile = el("div", { class: "code-tile", title: item.word || "" });
+    tile.append(el("b", { text: item.char }));
+    tile.append(el("small", { text: item.word || "…" }));
+    tiles.append(tile);
+  }
+  codeField.append(tiles);
+  codeField.append(el("small", { class: "small-dim", text: t("invite.hint") }));
+
+  const phrase = dictationPhrase(code);
+  const phraseBtn = el("button", {
+    type: "button",
+    class: "btn btn-sm",
+    text: t("invite.copyPhrase"),
+  });
+  phraseBtn.addEventListener("click", async () => {
+    const ok = await copyText(`${code}: ${phrase}`);
+    toast({
+      title: ok ? t("invite.phraseCopied") : t("err.title"),
+      icon: "i-copy",
+      tone: ok ? "info" : "error",
+      timeout: 2400,
+    });
+  });
+  codeField.append(el("div", { class: "row" }, [phraseBtn]));
+  wrap.append(codeField);
+
+  openModal({
+    title: t("invite.title", { code }),
     icon: "i-copy",
-    tone: ok ? "info" : "error",
+    width: "460px",
+    body: wrap,
+    buttons: [
+      {
+        label: t("invite.copyLink"),
+        onClick: async () => {
+          const ok = await copyText(link);
+          toast({
+            title: ok ? t("call.linkCopied") : t("err.title"),
+            icon: "i-copy",
+            tone: ok ? "info" : "error",
+            timeout: 2200,
+          });
+          return false; // окно оставляем открытым: код ещё могут диктовать
+        },
+      },
+      { label: t("common.close"), onClick: () => {} },
+    ],
   });
 }
 
@@ -2199,7 +2288,7 @@ async function handleAction(action) {
       openReadme();
       break;
     case "copy-link":
-      copyRoomLink();
+      openInvite();
       break;
     case "open-in-app":
       openInApp();
@@ -2335,7 +2424,12 @@ function setupChrome() {
     if (event.key === "Enter") $("#btnJoinCode").click();
   });
   $("#joinCode")?.addEventListener("input", (event) => {
-    event.target.value = event.target.value.replace(/\D/g, "").slice(0, APP.roomCodeLength);
+    // Оставляем только буквы и цифры: код может быть и старым (4 цифры),
+    // и новым (6 знаков букв и цифр).
+    event.target.value = event.target.value
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, "")
+      .slice(0, APP.roomCode.maxLength);
   });
 
   $("#btnJoinSelected")?.addEventListener("click", () => joinRecent(state.selectedCode));
@@ -2370,7 +2464,7 @@ function setupChrome() {
   });
   $("#btnCallSettings")?.addEventListener("click", openSettings);
   $("#btnHangup")?.addEventListener("click", () => hangup());
-  $("#btnCopyLink")?.addEventListener("click", copyRoomLink);
+  $("#btnCopyLink")?.addEventListener("click", openInvite);
 
   // Кнопка «В приложении» нужна только в браузере: в обёртке комната уже там.
   const openAppBtn = $("#btnOpenApp");

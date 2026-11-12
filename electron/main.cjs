@@ -530,8 +530,12 @@ function roomFromLink(value) {
   const arg = value.trim();
   if (!arg) return null;
 
-  const legacy = /^--room=(\d{4})$/.exec(arg);
-  if (legacy) return legacy[1];
+  // Код комнаты: от 4 до 12 латинских букв и цифр. Старые четырёхзначные
+  // коды подходят под это же правило, отдельной ветки им не нужно.
+  const CODE = /^[A-Za-z0-9]{4,12}$/;
+
+  const legacy = /^--room=(.+)$/.exec(arg);
+  if (legacy && CODE.test(legacy[1].trim())) return legacy[1].trim().toUpperCase();
 
   if (!arg.toLowerCase().startsWith(`${JOIN_SCHEME}://`)) return null;
 
@@ -542,10 +546,15 @@ function roomFromLink(value) {
   const [pathPart, queryPart = ""] = rest.split("?", 2);
 
   const fromQuery = new URLSearchParams(queryPart).get("room");
-  if (fromQuery && /^\d{4}$/.test(fromQuery.trim())) return fromQuery.trim();
+  if (fromQuery && CODE.test(fromQuery.trim())) return fromQuery.trim().toUpperCase();
 
-  const digits = pathPart.match(/(\d{4})(?!\d)/);
-  if (digits) return digits[1];
+  // «join» и «room» — служебные слова в ссылке, а не код: сами по себе они
+  // тоже подходят под 4–12 букв, поэтому их пропускаем.
+  const RESERVED = new Set(["join", "room", "call"]);
+  for (const segment of pathPart.split("/")) {
+    if (RESERVED.has(segment.toLowerCase())) continue;
+    if (CODE.test(segment)) return segment.toUpperCase();
+  }
 
   return null;
 }
